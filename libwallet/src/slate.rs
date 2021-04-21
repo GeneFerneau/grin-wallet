@@ -64,8 +64,12 @@ pub struct ParticipantData {
 	pub public_blind_excess: PublicKey,
 	/// Public key corresponding to private nonce
 	pub public_nonce: PublicKey,
+	/// Public key corresponding to the atomic secret
+	pub public_atomic: Option<PublicKey>,
 	/// Public partial signature
 	pub part_sig: Option<Signature>,
+	/// Public partial commitment to multisig output value
+	pub part_commit: Option<Commitment>,
 	/// Tau X key for multiparty output rangeproof
 	pub tau_x: Option<SecretKey>,
 	/// Tau one partial public key for multiparty output rangeproof
@@ -160,6 +164,22 @@ pub enum SlateState {
 	Invoice2,
 	/// Invoice flow, ready for tranasction posting
 	Invoice3,
+	/// Multisig flow, freshly init
+	Multisig1,
+	///Multisig flow, step 1 proof build
+	Multisig2,
+	/// Multisig flow, step 2 proof build
+	Multisig3,
+	/// Multisig flow, final proof step
+	Multisig4,
+	/// Atomic flow, freshly init
+	Atomic1,
+	/// Atomic flow, return journey
+	Atomic2,
+	/// Atomic flow, partial signature from initiator
+	Atomic3,
+	/// Atomic flow, ready for transaction posting
+	Atomic4,
 }
 
 impl fmt::Display for SlateState {
@@ -172,6 +192,14 @@ impl fmt::Display for SlateState {
 			SlateState::Invoice1 => "I1",
 			SlateState::Invoice2 => "I2",
 			SlateState::Invoice3 => "I3",
+			SlateState::Multisig1 => "M1",
+			SlateState::Multisig2 => "M2",
+			SlateState::Multisig3 => "M3",
+			SlateState::Multisig4 => "M4",
+			SlateState::Atomic1 => "A1",
+			SlateState::Atomic2 => "A2",
+			SlateState::Atomic3 => "A3",
+			SlateState::Atomic4 => "A4",
 		};
 		write!(f, "{}", res)
 	}
@@ -499,6 +527,7 @@ impl Slate {
 		let pub_key = PublicKey::from_secret_key(keychain.secp(), &context.sec_key)?;
 		let pub_nonce = PublicKey::from_secret_key(keychain.secp(), &context.sec_nonce)?;
 		let mut part_sig = part_sig;
+		let part_commit = context.partial_commit.clone();
 
 		// Remove if already here and replace
 		self.participant_data = self
@@ -519,7 +548,9 @@ impl Slate {
 		self.participant_data.push(ParticipantData {
 			public_blind_excess: pub_key,
 			public_nonce: pub_nonce,
+			public_atomic: None,
 			part_sig: part_sig,
+			part_commit,
 			tau_x: None,
 			tau_one: None,
 			tau_two: None,
@@ -960,7 +991,9 @@ impl From<&ParticipantData> for ParticipantDataV4 {
 		let ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			public_atomic: _,
 			part_sig,
+			part_commit: _,
 			tau_x: _,
 			tau_one: _,
 			tau_two: _,
@@ -981,21 +1014,27 @@ impl From<&ParticipantData> for ParticipantDataV5 {
 		let ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			public_atomic,
 			part_sig,
+			part_commit,
 			tau_x,
 			tau_one,
 			tau_two,
 		} = data;
 		let public_blind_excess = *public_blind_excess;
 		let public_nonce = *public_nonce;
+		let public_atomic = *public_atomic;
 		let part_sig = *part_sig;
+		let part_commit = *part_commit;
 		let tau_x = tau_x.clone();
 		let tau_one = tau_one.clone();
 		let tau_two = tau_two.clone();
 		ParticipantDataV5 {
 			xs: public_blind_excess,
 			nonce: public_nonce,
+			atomic: public_atomic,
 			part: part_sig,
+			part_commit,
 			tau_x,
 			tau_one,
 			tau_two,
@@ -1013,6 +1052,7 @@ impl From<&SlateState> for SlateStateV4 {
 			SlateState::Invoice1 => SlateStateV4::Invoice1,
 			SlateState::Invoice2 => SlateStateV4::Invoice2,
 			SlateState::Invoice3 => SlateStateV4::Invoice3,
+			_ => SlateStateV4::Unknown,
 		}
 	}
 }
@@ -1027,6 +1067,14 @@ impl From<&SlateState> for SlateStateV5 {
 			SlateState::Invoice1 => SlateStateV5::Invoice1,
 			SlateState::Invoice2 => SlateStateV5::Invoice2,
 			SlateState::Invoice3 => SlateStateV5::Invoice3,
+			SlateState::Atomic1 => SlateStateV5::Atomic1,
+			SlateState::Atomic2 => SlateStateV5::Atomic2,
+			SlateState::Atomic3 => SlateStateV5::Atomic3,
+			SlateState::Atomic4 => SlateStateV5::Atomic4,
+			SlateState::Multisig1 => SlateStateV5::Multisig1,
+			SlateState::Multisig2 => SlateStateV5::Multisig2,
+			SlateState::Multisig3 => SlateStateV5::Multisig3,
+			SlateState::Multisig4 => SlateStateV5::Multisig4,
 		}
 	}
 }
@@ -1241,7 +1289,9 @@ pub fn tx_from_slate_v4(slate: &SlateV4) -> Option<Transaction> {
 		calc_slate.participant_data.push(ParticipantData {
 			public_blind_excess: d.xs,
 			public_nonce: d.nonce,
+			public_atomic: None,
 			part_sig: d.part,
+			part_commit: None,
 			tau_x: None,
 			tau_one: None,
 			tau_two: None,
@@ -1310,7 +1360,9 @@ pub fn tx_from_slate_v5(slate: &SlateV5) -> Option<Transaction> {
 		calc_slate.participant_data.push(ParticipantData {
 			public_blind_excess: d.xs,
 			public_nonce: d.nonce,
+			public_atomic: d.atomic,
 			part_sig: d.part,
+			part_commit: d.part_commit,
 			tau_x: d.tau_x.clone(),
 			tau_one: d.tau_one.clone(),
 			tau_two: d.tau_two.clone(),
@@ -1393,7 +1445,9 @@ impl From<&ParticipantDataV4> for ParticipantData {
 		ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			public_atomic: None,
 			part_sig,
+			part_commit: None,
 			tau_x: None,
 			tau_one: None,
 			tau_two: None,
@@ -1407,20 +1461,26 @@ impl From<&ParticipantDataV5> for ParticipantData {
 			xs: public_blind_excess,
 			nonce: public_nonce,
 			part: part_sig,
+			atomic: public_atomic,
+			part_commit,
 			tau_x,
 			tau_one,
 			tau_two,
 		} = data;
 		let public_blind_excess = *public_blind_excess;
 		let public_nonce = *public_nonce;
+		let public_atomic = *public_atomic;
 		let part_sig = *part_sig;
+		let part_commit = *part_commit;
 		let tau_x = tau_x.clone();
 		let tau_one = tau_one.clone();
 		let tau_two = tau_two.clone();
 		ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			public_atomic,
 			part_sig,
+			part_commit,
 			tau_x,
 			tau_one,
 			tau_two,
@@ -1468,6 +1528,14 @@ impl From<&SlateStateV5> for SlateState {
 			SlateStateV5::Invoice1 => SlateState::Invoice1,
 			SlateStateV5::Invoice2 => SlateState::Invoice2,
 			SlateStateV5::Invoice3 => SlateState::Invoice3,
+			SlateStateV5::Multisig1 => SlateState::Multisig1,
+			SlateStateV5::Multisig2 => SlateState::Multisig2,
+			SlateStateV5::Multisig3 => SlateState::Multisig3,
+			SlateStateV5::Multisig4 => SlateState::Multisig4,
+			SlateStateV5::Atomic1 => SlateState::Atomic1,
+			SlateStateV5::Atomic2 => SlateState::Atomic2,
+			SlateStateV5::Atomic3 => SlateState::Atomic3,
+			SlateStateV5::Atomic4 => SlateState::Atomic4,
 		}
 	}
 }
