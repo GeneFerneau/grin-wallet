@@ -60,6 +60,8 @@ pub struct ParticipantData {
 	pub public_blind_excess: PublicKey,
 	/// Public key corresponding to private nonce
 	pub public_nonce: PublicKey,
+	/// Public key corresponding to the atomic private nonce
+	pub atomic_nonce: Option<PublicKey>,
 	/// Public partial signature
 	pub part_sig: Option<Signature>,
 }
@@ -150,6 +152,14 @@ pub enum SlateState {
 	Invoice2,
 	/// Invoice flow, ready for tranasction posting
 	Invoice3,
+	/// Atomic flow, freshly init
+	Atomic1,
+	/// Atomic flow, return journey
+	Atomic2,
+	/// Atomic flow, partial signature from initiator
+	Atomic3,
+	/// Atomic flow, ready for transaction posting
+	Atomic4,
 }
 
 impl fmt::Display for SlateState {
@@ -162,6 +172,10 @@ impl fmt::Display for SlateState {
 			SlateState::Invoice1 => "I1",
 			SlateState::Invoice2 => "I2",
 			SlateState::Invoice3 => "I3",
+			SlateState::Atomic1 => "A1",
+			SlateState::Atomic2 => "A2",
+			SlateState::Atomic3 => "A3",
+			SlateState::Atomic4 => "A4",
 		};
 		write!(f, "{}", res)
 	}
@@ -400,6 +414,7 @@ impl Slate {
 			keychain.secp(),
 			sec_key,
 			sec_nonce,
+			None,
 			&self.pub_nonce_sum(keychain.secp())?,
 			Some(&self.pub_blind_sum(keychain.secp())?),
 			&self.msg_to_sign()?,
@@ -508,6 +523,7 @@ impl Slate {
 		self.participant_data.push(ParticipantData {
 			public_blind_excess: pub_key,
 			public_nonce: pub_nonce,
+			atomic_nonce: None,
 			part_sig: part_sig,
 		});
 		Ok(())
@@ -580,6 +596,7 @@ impl Slate {
 					secp,
 					p.part_sig.as_ref().unwrap(),
 					&self.pub_nonce_sum(secp)?,
+					None,
 					&p.public_blind_excess,
 					Some(&self.pub_blind_sum(secp)?),
 					&self.msg_to_sign()?,
@@ -822,14 +839,17 @@ impl From<&ParticipantData> for ParticipantDataV4 {
 		let ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			atomic_nonce,
 			part_sig,
 		} = data;
 		let public_blind_excess = *public_blind_excess;
 		let public_nonce = *public_nonce;
+		let atomic_nonce = *atomic_nonce;
 		let part_sig = *part_sig;
 		ParticipantDataV4 {
 			xs: public_blind_excess,
 			nonce: public_nonce,
+			atomic: atomic_nonce,
 			part: part_sig,
 		}
 	}
@@ -845,6 +865,10 @@ impl From<&SlateState> for SlateStateV4 {
 			SlateState::Invoice1 => SlateStateV4::Invoice1,
 			SlateState::Invoice2 => SlateStateV4::Invoice2,
 			SlateState::Invoice3 => SlateStateV4::Invoice3,
+			SlateState::Atomic1 => SlateStateV4::Atomic1,
+			SlateState::Atomic2 => SlateStateV4::Atomic2,
+			SlateState::Atomic3 => SlateStateV4::Atomic3,
+			SlateState::Atomic4 => SlateStateV4::Atomic4,
 		}
 	}
 }
@@ -960,6 +984,7 @@ pub fn tx_from_slate_v4(slate: &SlateV4) -> Option<Transaction> {
 		calc_slate.participant_data.push(ParticipantData {
 			public_blind_excess: d.xs,
 			public_nonce: d.nonce,
+			atomic_nonce: d.atomic,
 			part_sig: d.part,
 		});
 	}
@@ -1025,14 +1050,17 @@ impl From<&ParticipantDataV4> for ParticipantData {
 		let ParticipantDataV4 {
 			xs: public_blind_excess,
 			nonce: public_nonce,
+			atomic: atomic_nonce,
 			part: part_sig,
 		} = data;
 		let public_blind_excess = *public_blind_excess;
 		let public_nonce = *public_nonce;
+		let atomic_nonce = *atomic_nonce;
 		let part_sig = *part_sig;
 		ParticipantData {
 			public_blind_excess,
 			public_nonce,
+			atomic_nonce,
 			part_sig,
 		}
 	}
@@ -1056,6 +1084,10 @@ impl From<&SlateStateV4> for SlateState {
 			SlateStateV4::Invoice1 => SlateState::Invoice1,
 			SlateStateV4::Invoice2 => SlateState::Invoice2,
 			SlateStateV4::Invoice3 => SlateState::Invoice3,
+			SlateStateV4::Atomic1 => SlateState::Atomic1,
+			SlateStateV4::Atomic2 => SlateState::Atomic2,
+			SlateStateV4::Atomic3 => SlateState::Atomic3,
+			SlateStateV4::Atomic4 => SlateState::Atomic4,
 		}
 	}
 }

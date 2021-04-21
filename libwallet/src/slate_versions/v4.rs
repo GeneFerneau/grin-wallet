@@ -163,6 +163,10 @@ fn default_kernel_features_none() -> Option<KernelFeaturesArgsV4> {
 	None
 }
 
+fn default_atomic_none() -> Option<PublicKey> {
+	None
+}
+
 /// Slate state definition
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SlateStateV4 {
@@ -180,6 +184,14 @@ pub enum SlateStateV4 {
 	Invoice2,
 	/// Invoice flow, ready for tranasction posting
 	Invoice3,
+	/// Atomic flow, freshly init
+	Atomic1,
+	///Atomic flow, return journey
+	Atomic2,
+	/// Atomic flow, partial signature from initiator
+	Atomic3,
+	/// Atomic flow, ready for tranasction posting
+	Atomic4,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -205,6 +217,11 @@ pub struct ParticipantDataV4 {
 	/// Public key corresponding to private nonce
 	#[serde(with = "secp_ser::pubkey_serde")]
 	pub nonce: PublicKey,
+	/// Public key corresponding to atomic private nonce
+	#[serde(default = "default_atomic_none")]
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(with = "secp_ser::option_pubkey_serde")]
+	pub atomic: Option<PublicKey>,
 	/// Public partial signature
 	#[serde(default = "default_part_sig_none")]
 	#[serde(skip_serializing_if = "Option::is_none")]

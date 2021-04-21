@@ -534,6 +534,10 @@ pub mod slate_state_v4 {
 			SlateStateV4::Invoice1 => "I1",
 			SlateStateV4::Invoice2 => "I2",
 			SlateStateV4::Invoice3 => "I3",
+			SlateStateV4::Atomic1 => "A1",
+			SlateStateV4::Atomic2 => "A2",
+			SlateStateV4::Atomic3 => "A3",
+			SlateStateV4::Atomic4 => "A4",
 		};
 		serializer.serialize_str(label)
 	}
@@ -552,6 +556,10 @@ pub mod slate_state_v4 {
 				"I1" => SlateStateV4::Invoice1,
 				"I2" => SlateStateV4::Invoice2,
 				"I3" => SlateStateV4::Invoice3,
+				"A1" => SlateStateV4::Atomic1,
+				"A2" => SlateStateV4::Atomic2,
+				"A3" => SlateStateV4::Atomic3,
+				"A4" => SlateStateV4::Atomic4,
 				_ => return Err(Error::custom("Invalid Slate state")),
 			};
 			Ok(retval)

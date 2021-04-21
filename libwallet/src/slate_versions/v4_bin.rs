@@ -41,6 +41,10 @@ impl Writeable for SlateStateV4 {
 			SlateStateV4::Invoice1 => 4,
 			SlateStateV4::Invoice2 => 5,
 			SlateStateV4::Invoice3 => 6,
+			SlateStateV4::Atomic1 => 7,
+			SlateStateV4::Atomic2 => 8,
+			SlateStateV4::Atomic3 => 9,
+			SlateStateV4::Atomic4 => 10,
 		};
 		writer.write_u8(b)
 	}
@@ -57,6 +61,10 @@ impl Readable for SlateStateV4 {
 			4 => SlateStateV4::Invoice1,
 			5 => SlateStateV4::Invoice2,
 			6 => SlateStateV4::Invoice3,
+			7 => SlateStateV4::Atomic1,
+			8 => SlateStateV4::Atomic2,
+			9 => SlateStateV4::Atomic3,
+			10 => SlateStateV4::Atomic4,
 			_ => SlateStateV4::Unknown,
 		};
 		Ok(sta)
@@ -184,13 +192,21 @@ impl<'a> Writeable for SigsWrapRef<'a> {
 		for s in self.0.iter() {
 			//0 means part sig is not yet included
 			//1 means part sig included
+			//2 means atomic nonce included
+			let mut flag = 0;
 			if s.part.is_some() {
-				writer.write_u8(1)?;
-			} else {
-				writer.write_u8(0)?;
+				flag |= 1;
 			}
+			if s.atomic.is_some() {
+				flag |= 2;
+			}
+			writer.write_u8(flag)?;
+
 			s.xs.write(writer)?;
 			s.nonce.write(writer)?;
+			if let Some(s) = s.atomic {
+				s.write(writer)?;
+			}
 			if let Some(s) = s.part {
 				s.write(writer)?;
 			}
@@ -209,8 +225,12 @@ impl Readable for SigsWrap {
 				let c = ParticipantDataV4 {
 					xs: PublicKey::read(reader)?,
 					nonce: PublicKey::read(reader)?,
+					atomic: match has_partial {
+						2 | 3 => Some(PublicKey::read(reader)?),
+						_ => None,
+					},
 					part: match has_partial {
-						1 => Some(Signature::read(reader)?),
+						1 | 3 => Some(Signature::read(reader)?),
 						0 | _ => None,
 					},
 				};
@@ -507,11 +527,13 @@ fn slate_v4_serialize_deserialize() {
 	let part = ParticipantDataV4 {
 		xs,
 		nonce,
+		atomic: None,
 		part: None,
 	};
 	let part2 = ParticipantDataV4 {
 		xs,
 		nonce,
+		atomic: None,
 		part: Some(Signature::from_raw_data(&[11; 64]).unwrap()),
 	};
 	v4.sigs.push(part.clone());

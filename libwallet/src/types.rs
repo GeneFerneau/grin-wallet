@@ -545,6 +545,8 @@ pub struct Context {
 	pub initial_sec_key: SecretKey,
 	/// as above
 	pub initial_sec_nonce: SecretKey,
+	/// Secret nonce (of which public is shared, atomic swap only)
+	pub sec_atomic_nonce: Option<SecretKey>,
 	/// store my outputs + amounts between invocations
 	/// Id, mmr_index (if known), amount
 	pub output_ids: Vec<(Identifier, Option<u64>, u64)>,
@@ -606,6 +608,7 @@ impl Context {
 			sec_nonce: sec_nonce.clone(),
 			initial_sec_key: sec_key,
 			initial_sec_nonce: sec_nonce,
+			sec_atomic_nonce: None,
 			input_ids: vec![],
 			output_ids: vec![],
 			amount: 0,
@@ -652,6 +655,32 @@ impl Context {
 			PublicKey::from_secret_key(secp, &self.sec_key).unwrap(),
 			PublicKey::from_secret_key(secp, &self.sec_nonce).unwrap(),
 		)
+	}
+
+	/// Create an atomic secret nonce
+	pub fn create_atomic_nonce(&mut self, nonce: SecretKey) {
+		self.sec_atomic_nonce = Some(nonce);
+	}
+
+	/// Set an atomic secret nonce
+	pub fn set_atomic_nonce(&mut self, nonce: SecretKey) {
+		self.sec_atomic_nonce = Some(nonce);
+	}
+
+	/// Get the atomic secret nonce
+	pub fn get_secret_atomic_nonce(&self) -> Option<&SecretKey> {
+		match &self.sec_atomic_nonce {
+			Some(n) => Some(n),
+			None => None,
+		}
+	}
+
+	/// Get the atomic public nonce
+	pub fn get_public_atomic_nonce(&self, secp: &Secp256k1) -> Result<Option<PublicKey>, Error> {
+		match &self.sec_atomic_nonce {
+			Some(n) => Ok(Some(PublicKey::from_secret_key(secp, n)?)),
+			None => Ok(None),
+		}
 	}
 }
 
