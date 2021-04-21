@@ -744,7 +744,7 @@ fn slatepack_bin_future() -> Result<(), grin_wallet_util::byte_ser::Error> {
 #[test]
 fn slatepack_encrypted_meta() -> Result<(), Error> {
 	use crate::grin_core::global;
-	use crate::{Slate, SlateVersion, VersionedBinSlate, VersionedSlate};
+	use crate::{Slate, SlateVersion, TxFlow, VersionedBinSlate, VersionedSlate};
 	use ed25519_dalek::PublicKey as edDalekPublicKey;
 	use ed25519_dalek::SecretKey as edDalekSecretKey;
 	use rand::{thread_rng, Rng};
@@ -766,7 +766,8 @@ fn slatepack_encrypted_meta() -> Result<(), Error> {
 	slatepack.add_recipient(SlatepackAddress::random());
 	slatepack.add_recipient(SlatepackAddress::random());
 
-	let v_slate = VersionedSlate::into_version(Slate::blank(2, false), SlateVersion::V4)?;
+	let v_slate =
+		VersionedSlate::into_version(Slate::blank(2, TxFlow::Standard), SlateVersion::V4)?;
 	let bin_slate = VersionedBinSlate::try_from(v_slate).map_err(|_| ErrorKind::SlatepackSer)?;
 	slatepack.payload = byte_ser::to_bytes(&bin_slate).map_err(|_| ErrorKind::SlatepackSer)?;
 
@@ -793,7 +794,7 @@ fn slatepack_encrypted_meta() -> Result<(), Error> {
 #[test]
 fn slatepack_encrypted_meta_future() -> Result<(), Error> {
 	use crate::grin_core::global;
-	use crate::{Slate, SlateVersion, VersionedBinSlate, VersionedSlate};
+	use crate::{Slate, SlateVersion, TxFlow, VersionedBinSlate, VersionedSlate};
 	use ed25519_dalek::PublicKey as edDalekPublicKey;
 	use ed25519_dalek::SecretKey as edDalekSecretKey;
 	use rand::{thread_rng, Rng};
@@ -815,7 +816,8 @@ fn slatepack_encrypted_meta_future() -> Result<(), Error> {
 	slatepack.add_recipient(SlatepackAddress::random());
 	slatepack.add_recipient(SlatepackAddress::random());
 
-	let v_slate = VersionedSlate::into_version(Slate::blank(2, false), SlateVersion::V4)?;
+	let v_slate =
+		VersionedSlate::into_version(Slate::blank(2, TxFlow::Standard), SlateVersion::V4)?;
 	let bin_slate = VersionedBinSlate::try_from(v_slate).map_err(|_| ErrorKind::SlatepackSer)?;
 	slatepack.payload = byte_ser::to_bytes(&bin_slate).map_err(|_| ErrorKind::SlatepackSer)?;
 
