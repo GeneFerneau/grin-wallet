@@ -15,8 +15,8 @@
 //! Generic implementation of owner API functions
 use strum::IntoEnumIterator;
 
-use crate::api_impl::owner::finalize_tx as owner_finalize;
 use crate::api_impl::owner::{check_ttl, post_tx};
+use crate::api_impl::owner::{finalize_atomic_swap, finalize_tx as owner_finalize};
 use crate::grin_core::core::FeeFields;
 use crate::grin_keychain::{Keychain, SwitchCommitmentType};
 use crate::grin_util::secp::key::SecretKey;
@@ -296,6 +296,8 @@ where
 		}
 		sl.state = SlateState::Invoice3;
 		sl.amount = 0;
+	} else if sl.state == SlateState::Atomic3 {
+		sl = finalize_atomic_swap(w, keychain_mask, slate)?;
 	} else {
 		sl = owner_finalize(w, keychain_mask, slate)?;
 	}
