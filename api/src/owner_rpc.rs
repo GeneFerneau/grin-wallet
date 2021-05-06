@@ -73,7 +73,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false);
+	# , 4, false, false, false, false, false);
 	```
 	*/
 	fn accounts(&self, token: Token) -> Result<Vec<AcctPathMapping>, ErrorKind>;
@@ -106,7 +106,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false);
+	# , 4, false, false, false, false, false);
 	```
 	 */
 	fn create_account_path(&self, token: Token, label: &String) -> Result<Identifier, ErrorKind>;
@@ -139,7 +139,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false);
+	# , 4, false, false, false, false, false);
 	```
 	 */
 	fn set_active_account(&self, token: Token, label: &String) -> Result<(), ErrorKind>;
@@ -210,7 +210,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 2, false, false, false, false);
+	# , 2, false, false, false, false, false);
 	```
 	*/
 	fn retrieve_outputs(
@@ -295,7 +295,7 @@ pub trait OwnerRpc {
 	  }
 	}
 	# "#
-	# , 2, false, false, false, false);
+	# , 2, false, false, false, false, false);
 	```
 	*/
 
@@ -347,7 +347,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 4, false, false, false, false);
+	# , 4, false, false, false, false, false);
 	```
 	 */
 
@@ -411,7 +411,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 4, false, false, false, false);
+		# , 4, false, false, false, false, false);
 	```
 	*/
 
@@ -458,7 +458,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 4, false, false, false, false);
+		# , 4, false, false, false, false, false);
 	```
 	*/
 
@@ -541,7 +541,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 4, false, false, false, false);
+	# , 4, false, false, false, false, false);
 	```
 	*/
 
@@ -591,11 +591,178 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5 ,true, false, false, false);
+	# , 5 ,true, false, false, false, false);
 
 	```
 	 */
 	fn tx_lock_outputs(&self, token: Token, slate: VersionedSlate) -> Result<(), ErrorKind>;
+
+	/**
+	;Networked version of [Owner::init_atomic_swap](struct.Owner.html#method.init_atomic_swap).
+
+	```
+		# grin_wallet_api::doctest_helper_json_rpc_owner_assert_response!(
+		# r#"
+		{
+			"jsonrpc": "2.0",
+			"method": "init_atomic_swap",
+			"params": {
+				"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
+				"args": {
+					"src_acct_name": null,
+					"amount": "6000000000",
+					"minimum_confirmations": 2,
+					"max_outputs": 500,
+					"num_change_outputs": 1,
+					"selection_strategy_is_use_all": true,
+					"target_slate_version": null,
+					"payment_proof_recipient_address": "tgrin1xtxavwfgs48ckf3gk8wwgcndmn0nt4tvkl8a7ltyejjcy2mc6nfs9gm2lp",
+					"ttl_blocks": null,
+					"send_args": null
+				},
+				"derive_path": 0
+			},
+			"id": 1
+		}
+		# "#
+		# ,
+		# r#"
+		{
+		"id": 1,
+			"jsonrpc": "2.0",
+			"result": {
+				"Ok": {
+					"amt": "6000000000",
+					"atomic_id": "046d7761746f6d69630000000000000000",
+					"fee": "23000000",
+					"id": "0436430c-2b02-624c-2032-570501212b00",
+					"off": "456498224e2a6850e073ab8fb5c32fcccfe70272c61759ea4ade53ae7dc367e6",
+					"proof": {
+						"raddr": "32cdd63928854f8b2628b1dce4626ddcdf35d56cb7cfdf7d64cca5822b78d4d3",
+						"saddr": "32cdd63928854f8b2628b1dce4626ddcdf35d56cb7cfdf7d64cca5822b78d4d3"
+					},
+					"sigs": [
+						{
+							"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+							"xs": "02e89cce4499ac1e9bb498dab9e3fab93cc40cd3d26c04a0292e00f4bf272499ec"
+						}
+					],
+					"sta": "A1",
+					"ver": "4:2"
+				}
+			}
+		}
+		# "#
+		# , 4, false, false, false, false, false);
+	```
+	*/
+	fn init_atomic_swap(
+		&self,
+		token: Token,
+		args: InitTxArgs,
+		derive_path: u32,
+	) -> Result<VersionedSlate, ErrorKind>;
+
+	/**
+		Networked version of [Owner::countersign_atomic_swap](struct.Owner.html#method.countersign_atomic_swap).
+
+		```
+		# grin_wallet_api::doctest_helper_json_rpc_owner_assert_response!(
+		# r#"
+		{
+			"jsonrpc": "2.0",
+			"method": "countersign_atomic_swap",
+			"id": 1,
+			"params": {
+				"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
+				"slate": {
+					"ver": "4:2",
+					"id": "0436430c-2b02-624c-2032-570501212b00",
+					"sta": "A2",
+					"off": "a5a632f26f27a9b71e98c1c8b8098bb41204ffcfd206d995f9c16d10764ad95a",
+					"amt": "60000000000",
+					"fee": "23500000",
+					"sigs": [
+						{
+							"xs": "02e89cce4499ac1e9bb498dab9e3fab93cc40cd3d26c04a0292e00f4bf272499ec",
+							"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"
+						},
+						{
+							  "xs": "02e3c128e436510500616fef3f9a22b15ca015f407c8c5cf96c9059163c873828f",
+							  "nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+							  "atomic": "03f94457808f7e1e68e07fe7dd0c43414220c1656573428c1b616175714f9d7c85",
+							  "part": "8f07ddd5e9f5179cff19486034181ed76505baaad53e5d994064127b56c5841b5205d0410c300529f342722369713adb64819dcbebee633f023e97cf3116a1a8"
+						}
+					],
+					"coms": [
+						{
+							"c": "099b48cfb1f80a2347dc89818449e68e76a3c6817a532a8e9ef2b4a5ccf4363850",
+							"p": "29701ceae262cac77b79b868c883a292e61e6de8192b868edcd1300b0973d91396b156ace6bd673402a303de10ddd8a5e6b7f17ba6557a574a672bd04cc273ab04ed8e2ca80bac483345c0ec843f521814ce1301ec9adc38956a12b4d948acce71295a4f52bcdeb8a1c9f2d6b2da5d731262a5e9c0276ef904df9ef8d48001420cd59f75a2f1ae5c7a1c7c6b9f140e7613e52ef9e249f29f9340b7efb80699e460164324616f98fd4cde3db52497c919e95222fffeacb7e65deca7e368a80ce713c19de7da5369726228ee336f5bd494538c12ccbffeb1b9bfd5fc8906d1c64245b516f103fa96d9c56975837652c1e0fa5803d7ccf1147d8f927e36da717f7ad79471dbe192f5f50f87a79fc3fe030dba569b634b92d2cf307993cce545633af263897cd7e6ebf4dcafb176d07358bdc38d03e45a49dfa9c8c6517cd68d167ffbf6c3b4de0e2dd21909cbad4c467b84e5700be473a39ac59c669d7c155c4bcab9b8026eea3431c779cd277e4922d2b9742e1f6678cbe869ec3b5b7ef4132ddb6cdd06cf27dbeb28be72b949fa897610e48e3a0d789fd2eea75abc97b3dc7e00e5c8b3d24e40c6f24112adb72352b89a2bef0599345338e9e76202a3c46efa6370952b2aca41aadbae0ea32531acafcdab6dd066d769ebf50cf4f3c0a59d2d5fa79600a207b9417c623f76ad05e8cccfcd4038f9448bc40f127ca7c0d372e46074e334fe49f5a956ec0056f4da601e6af80eb1a6c4951054869e665b296d8c14f344ca2dc5fdd5df4a3652536365a1615ad9b422165c77bf8fe65a835c8e0c41e070014eb66ef8c525204e990b3a3d663c1e42221b496895c37a2f0c1bf05e91235409c3fe3d89a9a79d6c78609ab18a463311911f71fa37bb73b15fcd38143d1404fd2ce81004dc7ff89cf1115dcc0c35ce1c1bf9941586fb959770f2618ccb7118a7"
+						}
+					],
+					"atomic_id": "046d7761746f6d69630000000000000000"
+				},
+				"r_addr": null
+			}
+		}
+		# "#
+		# ,
+		# r#"
+		{
+			"id": 1,
+			"jsonrpc": "2.0",
+			"result": {
+				"Ok": {
+					"amt": "60000000000",
+					"atomic_id": "046d7761746f6d69630000000000000000",
+					"coms": [
+						{
+							"c": "087df32304c5d4ae8b2af0bc31e700019d722910ef87dd4eec3197b80b207e3045",
+							"f": 1
+						},
+						{
+							"c": "08e1da9e6dc4d6e808a718b2f110a991dd775d65ce5ae408a4e1f002a4961aa9e7",
+							"f": 1
+						},
+						{
+							"c": "099b48cfb1f80a2347dc89818449e68e76a3c6817a532a8e9ef2b4a5ccf4363850",
+							"p": "29701ceae262cac77b79b868c883a292e61e6de8192b868edcd1300b0973d91396b156ace6bd673402a303de10ddd8a5e6b7f17ba6557a574a672bd04cc273ab04ed8e2ca80bac483345c0ec843f521814ce1301ec9adc38956a12b4d948acce71295a4f52bcdeb8a1c9f2d6b2da5d731262a5e9c0276ef904df9ef8d48001420cd59f75a2f1ae5c7a1c7c6b9f140e7613e52ef9e249f29f9340b7efb80699e460164324616f98fd4cde3db52497c919e95222fffeacb7e65deca7e368a80ce713c19de7da5369726228ee336f5bd494538c12ccbffeb1b9bfd5fc8906d1c64245b516f103fa96d9c56975837652c1e0fa5803d7ccf1147d8f927e36da717f7ad79471dbe192f5f50f87a79fc3fe030dba569b634b92d2cf307993cce545633af263897cd7e6ebf4dcafb176d07358bdc38d03e45a49dfa9c8c6517cd68d167ffbf6c3b4de0e2dd21909cbad4c467b84e5700be473a39ac59c669d7c155c4bcab9b8026eea3431c779cd277e4922d2b9742e1f6678cbe869ec3b5b7ef4132ddb6cdd06cf27dbeb28be72b949fa897610e48e3a0d789fd2eea75abc97b3dc7e00e5c8b3d24e40c6f24112adb72352b89a2bef0599345338e9e76202a3c46efa6370952b2aca41aadbae0ea32531acafcdab6dd066d769ebf50cf4f3c0a59d2d5fa79600a207b9417c623f76ad05e8cccfcd4038f9448bc40f127ca7c0d372e46074e334fe49f5a956ec0056f4da601e6af80eb1a6c4951054869e665b296d8c14f344ca2dc5fdd5df4a3652536365a1615ad9b422165c77bf8fe65a835c8e0c41e070014eb66ef8c525204e990b3a3d663c1e42221b496895c37a2f0c1bf05e91235409c3fe3d89a9a79d6c78609ab18a463311911f71fa37bb73b15fcd38143d1404fd2ce81004dc7ff89cf1115dcc0c35ce1c1bf9941586fb959770f2618ccb7118a7"
+						},
+						{
+							"c": "09ede20409d5ae0d1c0d3f3d2c68038a384cdd6b7cc5ca2aab670f570adc2dffc3",
+							"p": "6d86fe00220f8c6ac2ad4e338d80063dba5423af525bd273ecfac8ef6b509192732a8cd0c53d3313e663ac5ccece3d589fd2634e29f96e82b99ca6f8b953645a005d1bc73493f8c41f84fb8e327d4cbe6711dba194a60db30700df94a41e1fda7afe0619169389f8d8ee12bddf736c4bc86cd5b1809a5a27f195209147dc38d0de6f6710ce9350f3b8e7e6820bfe5182e6e58f0b41b82b6ec6bb01ffe1d8b3c2368ebf1e31dfdb9e00f0bc68d9119a38d19c038c29c7b37e31246e7bba56019bc88881d7d695d32557fc0e93635b5f24deffefc787787144e5de7e86281e79934e7e20d9408c34317c778e6b218ee26d0a5e56b8b84a883e3ddf8603826010234531281486454f8c2cf3fee074f242f9fc1da3c6636b86fb6f941eb8b633d6e3b3f87dfe5ae261a40190bd4636f433bcdd5e3400255594e282c5396db8999d95be08a35be9a8f70fdb7cf5353b90584523daee6e27e208b2ca0e5758b8a24b974dca00bab162505a2aa4bcefd8320f111240b62f861261f0ce9b35979f9f92da7dd6989fe1f41ec46049fd514d9142ce23755f52ec7e64df2af33579e9b8356171b91bc96b875511bef6062dd59ef3fe2ddcc152147554405b12c7c5231513405eb062aa8fa093e3414a144c544d551c4f1f9bf5d5d2ff5b50a3f296c800907704bed8d8ee948c0855eff65ad44413af641cdc68a06a7c855be7ed7dd64d5f623bbc9645763d48774ba2258240a83f8f89ef84d21c65bcb75895ebca08b0090b40aafb7ddef039fcaf4bad2dbbac72336c4412c600e854d368ed775597c15d2e66775ab47024ce7e62fd31bf90b183149990c10b5b678501dbac1af8b2897b67d085d87cab7af4036cba3bdcfdcc7548d7710511045813c6818d859e192e03adc0d6a6b30c4cbac20a0d6f8719c7a9c3ad46d62eec464c4c44b58fca463fea3ce1fc51"
+						}
+					],
+					"fee": "23500000",
+					"id": "0436430c-2b02-624c-2032-570501212b00",
+					"off": "a5a632f26f27a9b71e98c1c8b8098bb41204ffcfd206d995f9c16d10764ad95a",
+					"sigs": [
+						{
+							"atomic": "03f94457808f7e1e68e07fe7dd0c43414220c1656573428c1b616175714f9d7c85",
+							"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+							"part": "8f07ddd5e9f5179cff19486034181ed76505baaad53e5d994064127b56c5841b5205d0410c300529f342722369713adb64819dcbebee633f023e97cf3116a1a8",
+							"xs": "02e3c128e436510500616fef3f9a22b15ca015f407c8c5cf96c9059163c873828f"
+						},
+						{
+							"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+							"part": "8f07ddd5e9f5179cff19486034181ed76505baaad53e5d994064127b56c5841b04e1e15ceb1b5dbab8baf7750d7bd4aad6cfe97b83e4dc080dae328eb75881fd",
+							"xs": "02e89cce4499ac1e9bb498dab9e3fab93cc40cd3d26c04a0292e00f4bf272499ec"
+						}
+					],
+					"sta": "A3",
+					"ver": "4:2"
+				}
+			}
+		}
+		# "#
+		# , 5 , true, false, false, false, true);
+		```
+	*/
+	fn countersign_atomic_swap(
+		&self,
+		token: Token,
+		slate: VersionedSlate,
+	) -> Result<VersionedSlate, ErrorKind>;
 
 	/**
 	Networked version of [Owner::finalize_tx](struct.Owner.html#method.finalize_tx).
@@ -678,7 +845,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false);
+	# , 5, true, true, false, false, false);
 	```
 	 */
 	fn finalize_tx(&self, token: Token, slate: VersionedSlate)
@@ -747,7 +914,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, false);
+	# , 5, true, true, true, false, false);
 	```
 	 */
 
@@ -781,7 +948,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false);
+	# , 5, true, true, false, false, false);
 	```
 	 */
 	fn cancel_tx(
@@ -830,7 +997,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false);
+	# , 5, true, true, false, false, false);
 	```
 	 */
 	fn get_stored_tx(
@@ -868,7 +1035,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 1, false, false, false, false);
+	# , 1, false, false, false, false, false);
 	```
 	 */
 	fn scan(
@@ -907,7 +1074,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false);
+	# , 5, false, false, false, false, false);
 	```
 	 */
 	fn node_height(&self, token: Token) -> Result<NodeHeightResult, ErrorKind>;
@@ -990,7 +1157,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false);
+	# , 5, false, false, false, false, false);
 	```
 	*/
 
@@ -1020,7 +1187,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false);
+	# , 5, false, false, false, false, false);
 	```
 	*/
 
@@ -1086,7 +1253,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false);
+	# , 5, false, false, false, false, false);
 	```
 	*/
 	fn create_config(
@@ -1124,7 +1291,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1161,7 +1328,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1191,7 +1358,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1222,7 +1389,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1254,7 +1421,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 	fn change_password(
@@ -1288,7 +1455,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 	fn delete_wallet(&self, name: Option<String>) -> Result<(), ErrorKind>;
@@ -1318,7 +1485,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1346,7 +1513,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 	fn stop_updater(&self) -> Result<(), ErrorKind>;
@@ -1375,7 +1542,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1406,7 +1573,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1441,7 +1608,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1491,7 +1658,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1546,7 +1713,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1588,7 +1755,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 
@@ -1633,7 +1800,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, true);
+	# , 5, true, true, true, true, false);
 	```
 	*/
 
@@ -1680,7 +1847,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, true);
+	# , 5, true, true, true, true, false);
 	```
 	*/
 
@@ -1718,7 +1885,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false);
+	# , 0, false, false, false, false, false);
 	```
 	*/
 	fn set_tor_config(&self, tor_config: Option<TorConfig>) -> Result<(), ErrorKind>;
@@ -1822,6 +1989,35 @@ where
 			(&token.keychain_mask).as_ref(),
 			&Slate::from(in_slate),
 			args,
+		)
+		.map_err(|e| e.kind())?;
+		let version = SlateVersion::V4;
+		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
+	}
+
+	fn init_atomic_swap(
+		&self,
+		token: Token,
+		args: InitTxArgs,
+		derive_path: u32,
+	) -> Result<VersionedSlate, ErrorKind> {
+		let out_slate =
+			Owner::init_atomic_swap(self, (&token.keychain_mask).as_ref(), args, derive_path)
+				.map_err(|e| e.kind())?;
+		let version = SlateVersion::V4;
+		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
+	}
+
+	fn countersign_atomic_swap(
+		&self,
+		token: Token,
+		in_slate: VersionedSlate,
+	) -> Result<VersionedSlate, ErrorKind> {
+		let slate = Slate::from(in_slate);
+		let out_slate = Owner::countersign_atomic_swap(
+			self,
+			&Slate::from(slate),
+			(&token.keychain_mask).as_ref(),
 		)
 		.map_err(|e| e.kind())?;
 		let version = SlateVersion::V4;
@@ -2142,6 +2338,7 @@ pub fn run_doctest_owner(
 	lock_tx: bool,
 	finalize_tx: bool,
 	payment_proof: bool,
+	countersign_atomic: bool,
 ) -> Result<Option<serde_json::Value>, String> {
 	use easy_jsonrpc_mw::Handler;
 	use grin_wallet_impls::test_framework::{self, LocalWalletClient, WalletProxy};
@@ -2287,15 +2484,29 @@ pub fn run_doctest_owner(
 			payment_proof_recipient_address: proof_address,
 			..Default::default()
 		};
-		let mut slate =
-			api_impl::owner::init_send_tx(&mut **w, (&mask1).as_ref(), args, true).unwrap();
+		let mut slate = if countersign_atomic {
+			api_impl::owner::init_atomic_swap(&mut **w, (&mask1).as_ref(), args, 0, true).unwrap()
+		} else {
+			api_impl::owner::init_send_tx(&mut **w, (&mask1).as_ref(), args, true).unwrap()
+		};
 		println!("INITIAL SLATE");
 		println!("{}", serde_json::to_string_pretty(&slate).unwrap());
 		{
 			let mut w_lock = wallet2.lock();
 			let w2 = w_lock.lc_provider().unwrap().wallet_inst().unwrap();
-			slate = api_impl::foreign::receive_tx(&mut **w2, (&mask2).as_ref(), &slate, None, true)
-				.unwrap();
+			slate = if countersign_atomic {
+				api_impl::foreign::receive_atomic_tx(
+					&mut **w2,
+					(&mask2).as_ref(),
+					&slate,
+					None,
+					true,
+				)
+				.unwrap()
+			} else {
+				api_impl::foreign::receive_tx(&mut **w2, (&mask2).as_ref(), &slate, None, true)
+					.unwrap()
+			};
 			w2.close().unwrap();
 		}
 		// Spit out slate for input to finalize_tx
@@ -2306,7 +2517,19 @@ pub fn run_doctest_owner(
 		println!("RECEIPIENT SLATE");
 		println!("{}", serde_json::to_string_pretty(&slate).unwrap());
 		if finalize_tx {
-			slate = api_impl::owner::finalize_tx(&mut **w, (&mask1).as_ref(), &slate).unwrap();
+			slate = if countersign_atomic {
+				let sl =
+					api_impl::owner::countersign_atomic_swap(&mut **w, &slate, (&mask1).as_ref())
+						.unwrap();
+				let mut w_lock = wallet2.lock();
+				let w2 = w_lock.lc_provider().unwrap().wallet_inst().unwrap();
+				let sl = api_impl::foreign::finalize_tx(&mut **w2, (&mask2).as_ref(), &sl, false)
+					.unwrap();
+				w2.close().unwrap();
+				sl
+			} else {
+				api_impl::owner::finalize_tx(&mut **w, (&mask1).as_ref(), &slate).unwrap()
+			};
 			error!("FINALIZED TX SLATE");
 			println!("{}", serde_json::to_string_pretty(&slate).unwrap());
 		}
@@ -2339,7 +2562,7 @@ pub fn run_doctest_owner(
 #[doc(hidden)]
 #[macro_export]
 macro_rules! doctest_helper_json_rpc_owner_assert_response {
-	($request:expr, $expected_response:expr, $blocks_to_mine:expr, $perform_tx:expr, $lock_tx:expr, $finalize_tx:expr, $payment_proof:expr) => {
+	($request:expr, $expected_response:expr, $blocks_to_mine:expr, $perform_tx:expr, $lock_tx:expr, $finalize_tx:expr, $payment_proof:expr, $countersign_atomic:expr) => {
 		// create temporary wallet, run jsonrpc request on owner api of wallet, delete wallet, return
 		// json response.
 		// In order to prevent leaking tempdirs, This function should not panic.
@@ -2372,6 +2595,7 @@ macro_rules! doctest_helper_json_rpc_owner_assert_response {
 				$lock_tx,
 				$finalize_tx,
 				$payment_proof,
+				$countersign_atomic,
 			)
 			.unwrap()
 			.unwrap();
