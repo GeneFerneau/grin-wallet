@@ -934,7 +934,6 @@ pub fn init_atomic_swap<'a, T: ?Sized, C, K>(
 	w: &mut T,
 	keychain_mask: Option<&SecretKey>,
 	args: InitTxArgs,
-	derive_path: u32,
 	use_test_rng: bool,
 ) -> Result<Slate, Error>
 where
@@ -1068,7 +1067,7 @@ where
 		debug!("Use this key to lock funds on the other chain.\n");
 
 		let mut batch = w.batch(keychain_mask)?;
-		batch.save_recovered_atomic_secret(&atomic_id, &atomic)?;
+		batch.save_recovered_atomic_secret(&atomic_id, &atomic_secret)?;
 		let atomic_idx = Slate::atomic_id_to_int(&atomic_id)?;
 		batch.save_used_atomic_index(&slate.id, atomic_idx)?;
 		batch.commit()?;
