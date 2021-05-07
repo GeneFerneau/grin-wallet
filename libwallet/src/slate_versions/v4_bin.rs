@@ -17,7 +17,7 @@
 use crate::grin_core::core::transaction::{FeeFields, OutputFeatures};
 use crate::grin_core::ser as grin_ser;
 use crate::grin_core::ser::{Readable, Reader, Writeable, Writer};
-use crate::grin_keychain::BlindingFactor;
+use crate::grin_keychain::{BlindingFactor, Identifier};
 use crate::grin_util::secp::key::PublicKey;
 use crate::grin_util::secp::pedersen::{Commitment, RangeProof};
 use crate::grin_util::secp::Signature;
@@ -460,6 +460,12 @@ impl Writeable for SlateV4Bin {
 			};
 			writer.write_u64(lock_hgt)?;
 		}
+		if let Some(aid) = v4.atomic_id.as_ref() {
+			writer.write_u8(1)?;
+			writer.write_fixed_bytes(&aid.to_bytes())?;
+		} else {
+			writer.write_u8(0)?;
+		}
 		Ok(())
 	}
 }
@@ -485,6 +491,12 @@ impl Readable for SlateV4Bin {
 		} else {
 			None
 		};
+		let has_atomic_id = reader.read_u8()? == 1;
+		let atomic_id = if has_atomic_id {
+			Some(Identifier::read(reader)?)
+		} else {
+			None
+		};
 
 		Ok(SlateV4Bin(SlateV4 {
 			ver,
@@ -500,6 +512,7 @@ impl Readable for SlateV4Bin {
 			coms: opt_structs.coms,
 			proof: opt_structs.proof,
 			feat_args,
+			atomic_id,
 		}))
 	}
 }

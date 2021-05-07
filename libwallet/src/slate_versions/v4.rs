@@ -129,6 +129,10 @@ pub struct SlateV4 {
 	#[serde(default = "default_kernel_features_none")]
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub feat_args: Option<KernelFeaturesArgsV4>,
+	/// Atomic swap ID for storing the atomic nonce
+	#[serde(default = "default_atomic_id_none")]
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub atomic_id: Option<Identifier>,
 }
 
 fn default_payment_none() -> Option<PaymentInfoV4> {
@@ -160,6 +164,10 @@ fn default_num_participants_2() -> u8 {
 }
 
 fn default_kernel_features_none() -> Option<KernelFeaturesArgsV4> {
+	None
+}
+
+fn default_atomic_id_none() -> Option<Identifier> {
 	None
 }
 

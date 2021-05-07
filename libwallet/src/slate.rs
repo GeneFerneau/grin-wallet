@@ -23,7 +23,7 @@ use crate::grin_core::core::transaction::{
 };
 use crate::grin_core::libtx::{aggsig, build, proof::ProofBuild, tx_fee};
 use crate::grin_core::map_vec;
-use crate::grin_keychain::{BlindSum, BlindingFactor, Keychain, SwitchCommitmentType};
+use crate::grin_keychain::{BlindSum, BlindingFactor, Identifier, Keychain, SwitchCommitmentType};
 use crate::grin_util::secp::key::{PublicKey, SecretKey};
 use crate::grin_util::secp::pedersen::Commitment;
 use crate::grin_util::secp::Signature;
@@ -127,6 +127,8 @@ pub struct Slate {
 	pub payment_proof: Option<PaymentInfo>,
 	/// Kernel features arguments
 	pub kernel_features_args: Option<KernelFeaturesArgs>,
+	/// ID for deriving/storing the atomic nonce
+	pub atomic_id: Option<Identifier>,
 }
 
 impl fmt::Display for Slate {
@@ -300,6 +302,7 @@ impl Slate {
 			},
 			payment_proof: None,
 			kernel_features_args: None,
+			atomic_id: None,
 		}
 	}
 
@@ -741,6 +744,7 @@ impl From<Slate> for SlateV4 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			atomic_id,
 		} = slate.clone();
 		let participant_data = map_vec!(participant_data, |data| ParticipantDataV4::from(data));
 		let ver = VersionCompatInfoV4::from(&version_info);
@@ -767,6 +771,7 @@ impl From<Slate> for SlateV4 {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			atomic_id,
 		}
 	}
 }
@@ -787,6 +792,7 @@ impl From<&Slate> for SlateV4 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			atomic_id,
 		} = slate;
 		let num_parts = *num_parts;
 		let id = *id;
@@ -806,6 +812,7 @@ impl From<&Slate> for SlateV4 {
 			Some(a) => Some(KernelFeaturesArgsV4::from(a)),
 			None => None,
 		};
+		let atomic_id = atomic_id.clone();
 		SlateV4 {
 			num_parts,
 			id,
@@ -820,6 +827,7 @@ impl From<&Slate> for SlateV4 {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			atomic_id,
 		}
 	}
 }
@@ -954,6 +962,7 @@ impl From<SlateV4> for Slate {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			atomic_id,
 		} = slate.clone();
 		let participant_data = map_vec!(participant_data, |data| ParticipantData::from(data));
 		let version_info = VersionCompatInfo::from(&ver);
@@ -980,6 +989,7 @@ impl From<SlateV4> for Slate {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			atomic_id,
 		}
 	}
 }
