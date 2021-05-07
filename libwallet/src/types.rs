@@ -237,6 +237,13 @@ where
 
 	/// Flag whether the wallet needs a full UTXO scan on next update attempt
 	fn init_status(&mut self) -> Result<WalletInitStatus, Error>;
+
+	/// Get the private atomic nonce for an atomic swap transaction
+	fn get_atomic_nonce(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+		atomic_id: &Identifier,
+	) -> Result<SecretKey, Error>;
 }
 
 /// Batch trait to update the output data backend atomically. Trying to use a
@@ -305,6 +312,13 @@ where
 
 	/// Write the wallet data to backend file
 	fn commit(&self) -> Result<(), Error>;
+
+	/// Save private atomic nonce for an atomic swap transaction
+	fn save_atomic_nonce(
+		&mut self,
+		atomic_id: &Identifier,
+		atomic_nonce: &SecretKey,
+	) -> Result<(), Error>;
 }
 
 /// Encapsulate all wallet-node communication functions. No functions within libwallet
