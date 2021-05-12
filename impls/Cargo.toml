@@ -25,6 +25,7 @@ chrono = { version = "0.4.11", features = ["serde"] }
 lazy_static = "1"
 tokio = { version = "0.2", features = ["full"] }
 reqwest = { version = "0.10", features = ["rustls-tls", "socks"] }
+scalable_cuckoo_filter = { version = "0.2", features = ["serde_support"] }
 
 #Socks/Tor
 byteorder = "1"

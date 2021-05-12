@@ -28,7 +28,7 @@ use crate::internal::{keys, scan, selection, tx, updater};
 use crate::slate::{KernelFeaturesArgs, PaymentInfo, Slate, SlateState, TxFlow};
 use crate::types::{AcctPathMapping, NodeClient, TxLogEntry, WalletBackend, WalletInfo};
 use crate::{
-	address, wallet_lock, Context, InitTxArgs, IssueInvoiceTxArgs, NodeHeightResult,
+	address, wallet_lock, AtomicFilter, Context, InitTxArgs, IssueInvoiceTxArgs, NodeHeightResult,
 	OutputCommitMapping, PaymentProof, ScannedBlockInfo, Slatepack, SlatepackAddress, Slatepacker,
 	SlatepackerArgs, TxLogEntryType, WalletInitStatus, WalletInst, WalletLCProvider,
 };
@@ -811,18 +811,18 @@ where
 
 	let height = w.w2n_client().get_chain_tip()?.0;
 	let keychain = w.keychain(keychain_mask)?;
-	// FIXME: need a way to ensure atomic nonces are not reused
-	//
-	// The attack vector is being supplied/tricked into reusing the
-	// same derivation path for multiple swaps, where the swap has
-	// already been completed successfully.
-	//
-	// The attacker would not need to wait for the full signature
-	// in the repeat swap, since they would have the nonce already.
-	//
-	// Maybe use a bloom filter as an automated defense?
+	let mut filter = match w.get_atomic_filter(keychain_mask) {
+		Ok(f) => f,
+		Err(_) => AtomicFilter::new(100, 0.001),
+	};
+	if filter.contains(derive_path as u64) {
+		return Err(ErrorKind::GenericError("atomic nonce already used".into()).into());
+	}
+
+	filter.insert(derive_path as u64);
 	let atomic_id = Slate::create_atomic_id(derive_path as u64);
 	slate.atomic_id = Some(atomic_id);
+
 	let mut context = if args.late_lock.unwrap_or(false) {
 		// use late_lock context for initial height_lock tx,
 		// initiated by the atomic swap receiver
@@ -880,6 +880,7 @@ where
 	{
 		let mut batch = w.batch(keychain_mask)?;
 		batch.save_private_context(slate.id.as_bytes(), &context)?;
+		batch.save_atomic_filter(&filter)?;
 		batch.commit()?;
 	}
 

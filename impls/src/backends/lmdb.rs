@@ -31,8 +31,8 @@ use crate::store::{self, option_to_not_found, to_key, to_key_u64};
 use crate::core::core::Transaction;
 use crate::core::ser;
 use crate::libwallet::{
-	AcctPathMapping, Context, Error, ErrorKind, NodeClient, OutputData, ScannedBlockInfo,
-	TxLogEntry, WalletBackend, WalletInitStatus, WalletOutputBatch,
+	AcctPathMapping, AtomicFilter, Context, Error, ErrorKind, NodeClient, OutputData,
+	ScannedBlockInfo, TxLogEntry, WalletBackend, WalletInitStatus, WalletOutputBatch,
 };
 use crate::util::secp::constants::SECRET_KEY_SIZE;
 use crate::util::secp::key::SecretKey;
@@ -56,6 +56,8 @@ const LAST_SCANNED_KEY: &str = "LAST_SCANNED_KEY";
 const WALLET_INIT_STATUS: u8 = b'w';
 const WALLET_INIT_STATUS_KEY: &str = "WALLET_INIT_STATUS";
 const ATOMIC_NONCE_PREFIX: u8 = b'n';
+const ATOMIC_FILTER_PREFIX: u8 = b'f';
+const ATOMIC_FILTER_KEY: &'static [u8] = b"ATOMIC_SWAP_FILTER";
 
 /// test to see if database files exist in the current directory. If so,
 /// use a DB backend for all operations
@@ -111,6 +113,22 @@ where
 	let atomic_xor_key = hasher.finalize();
 	let mut ret_atomic = [0; SECRET_KEY_SIZE];
 	ret_atomic.copy_from_slice(&atomic_xor_key.as_bytes()[0..SECRET_KEY_SIZE]);
+	Ok(ret_atomic)
+}
+
+fn atomic_filter_key<K>(keychain: &K) -> Result<[u8; SECRET_KEY_SIZE], Error>
+where
+	K: Keychain,
+{
+	let root_key = keychain.derive_key(0, &K::root_key_id(), SwitchCommitmentType::Regular)?;
+	//derive XOE value for storing public atomic nonce
+	// h(root_key|"ATOMIC_SWAP_FILTER")
+	let mut hasher = Blake2b::new(SECRET_KEY_SIZE);
+	hasher.update(&root_key.0);
+	hasher.update(&ATOMIC_FILTER_KEY[..]);
+	let atomic_filter_key = hasher.finalize();
+	let mut ret_atomic = [0; SECRET_KEY_SIZE];
+	ret_atomic.copy_from_slice(&atomic_filter_key.as_bytes()[0..SECRET_KEY_SIZE]);
 	Ok(ret_atomic)
 }
 
@@ -527,6 +545,20 @@ where
 		}
 		Ok(SecretKey::from_slice(keychain.secp(), xor_key.as_ref())?)
 	}
+
+	fn get_atomic_filter<'a>(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+	) -> Result<AtomicFilter, Error> {
+		let filter_in = atomic_filter_key(&self.keychain(keychain_mask)?)?;
+		let filter_key = to_key(ATOMIC_FILTER_PREFIX, &mut filter_in.to_vec());
+		let batch = self.db.batch()?;
+		let filter: AtomicFilter = match batch.get_ser(&filter_key)? {
+			Some(f) => f,
+			None => return Err(ErrorKind::GenericError("missing atomic filter".into()).into()),
+		};
+		Ok(filter)
+	}
 }
 
 /// An atomic batch in which all changes can be committed all at once or
@@ -777,6 +809,17 @@ where
 			.as_ref()
 			.unwrap()
 			.put_ser(&nonce_key, &xor_key.to_vec())?;
+		Ok(())
+	}
+
+	fn save_atomic_filter(&mut self, filter: &AtomicFilter) -> Result<(), Error> {
+		let filter_in = atomic_filter_key(self.keychain())?;
+		let filter_key = to_key(ATOMIC_FILTER_PREFIX, &mut filter_in.to_vec());
+		self.db
+			.borrow()
+			.as_ref()
+			.unwrap()
+			.put_ser(&filter_key, filter)?;
 		Ok(())
 	}
 }
