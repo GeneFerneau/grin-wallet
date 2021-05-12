@@ -408,7 +408,15 @@ impl Slate {
 		} else {
 			Err(ErrorKind::GenericError("Invalid atomic ID".into()).into())
 		}
-    }
+	}
+
+	/// Convert the atomic nonce identifier to an unsigned integer
+	pub fn atomic_id_to_int(id: &Identifier) -> Result<u64, Error> {
+		Self::check_atomic_id(id)?;
+		let mut id_bytes = [0; 8];
+		id_bytes.copy_from_slice(&id.to_bytes()[9..]);
+		Ok(u64::from_be_bytes(id_bytes))
+	}
 
 	/// Completes callers part of round 1, adding public key info
 	/// to the slate

@@ -28,7 +28,7 @@ use crate::grin_util::secp::key::{PublicKey, SecretKey};
 use crate::grin_util::secp::{self, pedersen, Secp256k1};
 use crate::grin_util::{ToHex, ZeroingString};
 use crate::slate_versions::ser as dalek_ser;
-use crate::InitTxArgs;
+use crate::{AtomicFilter, InitTxArgs};
 use chrono::prelude::*;
 use ed25519_dalek::PublicKey as DalekPublicKey;
 use ed25519_dalek::Signature as DalekSignature;
@@ -244,6 +244,12 @@ where
 		keychain_mask: Option<&SecretKey>,
 		atomic_id: &Identifier,
 	) -> Result<SecretKey, Error>;
+
+	/// Retrieves the atomic nonce filter from storage
+	fn get_atomic_filter(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+	) -> Result<AtomicFilter, Error>;
 }
 
 /// Batch trait to update the output data backend atomically. Trying to use a
@@ -319,6 +325,9 @@ where
 		atomic_id: &Identifier,
 		atomic_nonce: &SecretKey,
 	) -> Result<(), Error>;
+
+	/// Save atomic nonce filter for no nonce reuse
+	fn save_atomic_filter(&mut self, filter: &AtomicFilter) -> Result<(), Error>;
 }
 
 /// Encapsulate all wallet-node communication functions. No functions within libwallet
