@@ -56,6 +56,7 @@ const LAST_SCANNED_KEY: &str = "LAST_SCANNED_KEY";
 const WALLET_INIT_STATUS: u8 = b'w';
 const WALLET_INIT_STATUS_KEY: &str = "WALLET_INIT_STATUS";
 const ATOMIC_NONCE_PREFIX: u8 = b'n';
+const RECOVERED_ATOMIC_NONCE_PREFIX: u8 = b'r';
 const ATOMIC_FILTER_PREFIX: u8 = b'f';
 const ATOMIC_FILTER_KEY: &'static [u8] = b"ATOMIC_SWAP_FILTER";
 
@@ -110,6 +111,26 @@ where
 	hasher.update(&root_key.0);
 	hasher.update(&atomic_id.to_bytes());
 	hasher.update(&b"atomic_nonce"[..]);
+	let atomic_xor_key = hasher.finalize();
+	let mut ret_atomic = [0; SECRET_KEY_SIZE];
+	ret_atomic.copy_from_slice(&atomic_xor_key.as_bytes()[0..SECRET_KEY_SIZE]);
+	Ok(ret_atomic)
+}
+
+fn recovered_atomic_xor_key<K>(
+	keychain: &K,
+	atomic_id: &Identifier,
+) -> Result<[u8; SECRET_KEY_SIZE], Error>
+where
+	K: Keychain,
+{
+	let root_key = keychain.derive_key(0, &K::root_key_id(), SwitchCommitmentType::Regular)?;
+	//derive XOE value for storing public atomic nonce
+	// h(root_key|atomic_id|"atomic_nonce")
+	let mut hasher = Blake2b::new(SECRET_KEY_SIZE);
+	hasher.update(&root_key.0);
+	hasher.update(&atomic_id.to_bytes());
+	hasher.update(&b"recovered_atomic_nonce"[..]);
 	let atomic_xor_key = hasher.finalize();
 	let mut ret_atomic = [0; SECRET_KEY_SIZE];
 	ret_atomic.copy_from_slice(&atomic_xor_key.as_bytes()[0..SECRET_KEY_SIZE]);
@@ -546,6 +567,30 @@ where
 		Ok(SecretKey::from_slice(keychain.secp(), xor_key.as_ref())?)
 	}
 
+	fn get_recovered_atomic_nonce<'a>(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+		atomic_id: &Identifier,
+	) -> Result<SecretKey, Error> {
+		let keychain = self.keychain(keychain_mask)?;
+		let mut xor_key = recovered_atomic_xor_key(&keychain, atomic_id)?;
+		let nonce_key = to_key(
+			RECOVERED_ATOMIC_NONCE_PREFIX,
+			&mut atomic_id.to_bytes().to_vec(),
+		);
+		let batch = self.db.batch()?;
+		let nonce: Vec<u8> = match batch.get_ser(&nonce_key)? {
+			Some(n) => n,
+			None => {
+				return Err(ErrorKind::GenericError("missing public atomic nonce".into()).into())
+			}
+		};
+		for (x, n) in xor_key.iter_mut().zip(nonce.iter()) {
+			*x ^= n;
+		}
+		Ok(SecretKey::from_slice(keychain.secp(), xor_key.as_ref())?)
+	}
+
 	fn get_atomic_filter<'a>(
 		&mut self,
 		keychain_mask: Option<&SecretKey>,
@@ -801,6 +846,27 @@ where
 	) -> Result<(), Error> {
 		let mut xor_key = atomic_xor_key(self.keychain(), atomic_id)?;
 		let nonce_key = to_key(ATOMIC_NONCE_PREFIX, &mut atomic_id.to_bytes().to_vec());
+		for (x, n) in xor_key.iter_mut().zip(atomic_nonce.0[..].iter()) {
+			*x ^= n;
+		}
+		self.db
+			.borrow()
+			.as_ref()
+			.unwrap()
+			.put_ser(&nonce_key, &xor_key.to_vec())?;
+		Ok(())
+	}
+
+	fn save_recovered_atomic_nonce(
+		&mut self,
+		atomic_id: &Identifier,
+		atomic_nonce: &SecretKey,
+	) -> Result<(), Error> {
+		let mut xor_key = recovered_atomic_xor_key(self.keychain(), atomic_id)?;
+		let nonce_key = to_key(
+			RECOVERED_ATOMIC_NONCE_PREFIX,
+			&mut atomic_id.to_bytes().to_vec(),
+		);
 		for (x, n) in xor_key.iter_mut().zip(atomic_nonce.0[..].iter()) {
 			*x ^= n;
 		}

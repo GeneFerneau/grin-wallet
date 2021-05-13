@@ -1151,6 +1151,44 @@ where
 	}
 }
 
+/// Recover atomic nonce from an adaptor signature and finalized kernel excess signature
+pub fn recover_atomic_nonce<'a, L, C, K>(
+	wallet_inst: &mut Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+	keychain_mask: Option<&SecretKey>,
+	slate: &Slate,
+) -> Result<(), Error>
+where
+	L: WalletLCProvider<'a, C, K>,
+	C: NodeClient + 'a,
+	K: Keychain + 'a,
+{
+	let mut w_lock = wallet_inst.lock();
+	let w = w_lock.lc_provider()?.wallet_inst()?;
+	let mut client = w.w2n_client().clone();
+	let keychain = w.keychain(keychain_mask)?;
+	if let Some((kernel, _, _)) = client.get_kernel(
+		&slate.calc_excess(keychain.secp())?,
+		Some(slate.ttl_cutoff_height.saturating_sub(60)),
+		Some(slate.ttl_cutoff_height),
+	)? {
+		let nonce = tx::recover_atomic_nonce(&mut **w, keychain_mask, slate, &kernel)?;
+		let atomic_id = slate
+			.atomic_id
+			.as_ref()
+			.ok_or(Error::from(ErrorKind::StoredTx("missing atomic ID".into())))?;
+		info!("Saving atomic nonce with atomic ID: {}, use with `get_atomic_nonces` to retrieve from storage", Slate::atomic_id_to_int(atomic_id)?);
+		let mut batch = w.batch(keychain_mask)?;
+		batch.save_recovered_atomic_nonce(atomic_id, &nonce)?;
+		batch.commit()?;
+		Ok(())
+	} else {
+		Err(
+			ErrorKind::StoredTx("missing finalized transaction kernel for the atomic swap".into())
+				.into(),
+		)
+	}
+}
+
 /// check repair
 /// Accepts a wallet inst instead of a raw wallet so it can
 /// lock as little as possible

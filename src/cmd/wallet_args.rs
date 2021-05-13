@@ -26,7 +26,7 @@ use grin_wallet_config::{config_file_exists, TorConfig, WalletConfig};
 use grin_wallet_controller::command;
 use grin_wallet_controller::{Error, ErrorKind};
 use grin_wallet_impls::{DefaultLCProvider, DefaultWalletImpl};
-use grin_wallet_libwallet::{self, Slate, SlatepackAddress, SlatepackArmor};
+use grin_wallet_libwallet::{self, Slate, SlatepackAddress, SlatepackArmor, TxFlow};
 use grin_wallet_libwallet::{IssueInvoiceTxArgs, NodeClient, WalletInst, WalletLCProvider};
 use grin_wallet_util::grin_core as core;
 use grin_wallet_util::grin_core::core::amount_to_hr_string;
@@ -495,6 +495,8 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 
 	let outfile = parse_optional(args, "outfile")?;
 
+	let atomic_id = parse_u64_or_none(args.value_of("atomic_id"));
+
 	Ok(command::SendArgs {
 		amount: amount,
 		minimum_confirmations: min_c,
@@ -510,6 +512,7 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 		target_slate_version: target_slate_version,
 		outfile,
 		skip_tor: args.is_present("manual"),
+		atomic_id,
 	})
 }
 
@@ -541,6 +544,47 @@ pub fn parse_receive_args(args: &ArgMatches) -> Result<command::ReceiveArgs, Par
 		skip_tor: args.is_present("manual"),
 		outfile,
 	})
+}
+
+pub fn parse_recover_atomic_args(
+	args: &ArgMatches,
+) -> Result<command::RecoverAtomicArgs, ParseError> {
+	// input file
+	let input_file = match args.is_present("input") {
+		true => {
+			let file = args.value_of("input").unwrap().to_owned();
+			// validate input
+			if !Path::new(&file).is_file() {
+				let msg = format!("File {} not found.", &file);
+				return Err(ParseError::ArgumentError(msg));
+			}
+			Some(file)
+		}
+		false => None,
+	};
+
+	let mut input_slatepack_message = None;
+	if input_file.is_none() {
+		input_slatepack_message = Some(prompt_slatepack()?);
+	}
+
+	let outfile = parse_optional(args, "outfile")?;
+
+	Ok(command::RecoverAtomicArgs {
+		input_file,
+		input_slatepack_message,
+		outfile,
+	})
+}
+
+pub fn parse_get_atomic_nonces_args(
+	args: &ArgMatches,
+) -> Result<command::GetAtomicNoncesArgs, ParseError> {
+	let id = parse_u64_or_none(args.value_of("id")).ok_or(ParseError::ArgumentError(
+		"missing or invalid atomic ID".into(),
+	))?;
+
+	Ok(command::GetAtomicNoncesArgs { id })
 }
 
 pub fn parse_unpack_args(args: &ArgMatches) -> Result<command::ReceiveArgs, ParseError> {
@@ -1123,6 +1167,7 @@ where
 				a,
 				wallet_config.dark_background_color_scheme.unwrap_or(true),
 				test_mode,
+				TxFlow::Standard,
 			)
 		}
 		("receive", Some(args)) => {
@@ -1134,6 +1179,7 @@ where
 				a,
 				Some(tor_config.clone()),
 				test_mode,
+				TxFlow::Standard,
 			)
 		}
 		("unpack", Some(args)) => {
@@ -1142,7 +1188,7 @@ where
 		}
 		("finalize", Some(args)) => {
 			let a = arg_parse!(parse_finalize_args(&args));
-			command::finalize(owner_api, km, a)
+			command::finalize(owner_api, km, a, TxFlow::Standard)
 		}
 		("invoice", Some(args)) => {
 			let a = arg_parse!(parse_issue_invoice_args(&args));
@@ -1163,6 +1209,52 @@ where
 				wallet_config.dark_background_color_scheme.unwrap_or(true),
 				test_mode,
 			)
+		}
+		("send_atomic", Some(args)) => {
+			let a = arg_parse!(parse_send_args(&args));
+			if a.atomic_id.is_none() {
+				return Err(ErrorKind::GenericError(
+					"Sending an atomic swap without atomic ID, use --atomic_id <id>".into(),
+				)
+				.into());
+			}
+			command::send(
+				owner_api,
+				km,
+				Some(tor_config.clone()),
+				a,
+				wallet_config.dark_background_color_scheme.unwrap_or(true),
+				test_mode,
+				TxFlow::Atomic,
+			)
+		}
+		("receive_atomic", Some(args)) => {
+			let a = arg_parse!(parse_receive_args(&args));
+			command::receive(
+				owner_api,
+				km,
+				&global_wallet_args,
+				a,
+				Some(tor_config.clone()),
+				test_mode,
+				TxFlow::Atomic,
+			)
+		}
+		("countersign_atomic", Some(args)) => {
+			let a = arg_parse!(parse_receive_args(&args));
+			command::countersign_atomic(owner_api, km, a, Some(tor_config.clone()), test_mode)
+		}
+		("finalize_atomic", Some(args)) => {
+			let a = arg_parse!(parse_finalize_args(&args));
+			command::finalize(owner_api, km, a, TxFlow::Atomic)
+		}
+		("recover_atomic_nonce", Some(args)) => {
+			let a = arg_parse!(parse_recover_atomic_args(&args));
+			command::recover_atomic_nonce(owner_api, km, a)
+		}
+		("get_atomic_nonces", Some(args)) => {
+			let a = arg_parse!(parse_get_atomic_nonces_args(&args));
+			command::get_atomic_nonces(owner_api, km, a)
 		}
 		("info", Some(args)) => {
 			let a = arg_parse!(parse_info_args(&args));

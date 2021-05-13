@@ -762,6 +762,7 @@ pub trait OwnerRpc {
 		&self,
 		token: Token,
 		slate: VersionedSlate,
+		r_addr: Option<String>,
 	) -> Result<VersionedSlate, ErrorKind>;
 
 	/**
@@ -2012,14 +2013,12 @@ where
 		&self,
 		token: Token,
 		in_slate: VersionedSlate,
+		r_addr: Option<String>,
 	) -> Result<VersionedSlate, ErrorKind> {
 		let slate = Slate::from(in_slate);
-		let out_slate = Owner::countersign_atomic_swap(
-			self,
-			&Slate::from(slate),
-			(&token.keychain_mask).as_ref(),
-		)
-		.map_err(|e| e.kind())?;
+		let out_slate =
+			Owner::countersign_atomic_swap(self, &slate, (&token.keychain_mask).as_ref(), r_addr)
+				.map_err(|e| e.kind())?;
 		let version = SlateVersion::V4;
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
