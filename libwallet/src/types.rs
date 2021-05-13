@@ -245,6 +245,13 @@ where
 		atomic_id: &Identifier,
 	) -> Result<SecretKey, Error>;
 
+	/// Get the recovered private atomic nonce for an atomic swap transaction
+	fn get_recovered_atomic_nonce(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+		atomic_id: &Identifier,
+	) -> Result<SecretKey, Error>;
+
 	/// Retrieves the atomic nonce filter from storage
 	fn get_atomic_filter(
 		&mut self,
@@ -321,6 +328,13 @@ where
 
 	/// Save private atomic nonce for an atomic swap transaction
 	fn save_atomic_nonce(
+		&mut self,
+		atomic_id: &Identifier,
+		atomic_nonce: &SecretKey,
+	) -> Result<(), Error>;
+
+	/// Save private atomic nonce for an atomic swap transaction
+	fn save_recovered_atomic_nonce(
 		&mut self,
 		atomic_id: &Identifier,
 		atomic_nonce: &SecretKey,

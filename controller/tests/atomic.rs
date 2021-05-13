@@ -124,7 +124,7 @@ fn atomic_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error> {
 
 	wallet::controller::owner_single_use(Some(wallet1.clone()), mask1.clone(), None, |api, m| {
 		// wallet 1 creates the first partial signature on the atomic swap
-		slate = api.countersign_atomic_swap(&slate, m)?;
+		slate = api.countersign_atomic_swap(&slate, m, None)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic3);
@@ -140,7 +140,7 @@ fn atomic_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error> {
 		let mut w_lock = wallet1.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let tx = slate.tx_or_err()?;
-		libwallet::recover_atomic_nonce(&mut **w, mask1, &slate, &tx)?
+		libwallet::recover_atomic_nonce(&mut **w, mask1, &slate, &tx.kernels()[0])?
 	};
 
 	assert_eq!(rec_atomic_nonce, atomic_nonce);
@@ -245,7 +245,7 @@ fn atomic_refund_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error>
 
 	wallet::controller::owner_single_use(Some(wallet2.clone()), mask2.clone(), None, |api, m| {
 		// wallet 1 creates the first partial signature on the atomic swap
-		slate = api.countersign_atomic_swap(&slate, m)?;
+		slate = api.countersign_atomic_swap(&slate, m, None)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic3);
@@ -261,7 +261,7 @@ fn atomic_refund_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error>
 		let mut w_lock = wallet2.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let tx = slate.tx_or_err()?;
-		libwallet::recover_atomic_nonce(&mut **w, mask2, &slate, &tx)?
+		libwallet::recover_atomic_nonce(&mut **w, mask2, &slate, &tx.kernels()[0])?
 	};
 
 	assert_eq!(rec_atomic_nonce, atomic_nonce);
@@ -366,7 +366,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 
 	wallet::controller::owner_single_use(Some(wallet2.clone()), mask2.clone(), None, |api, m| {
 		// wallet 1 creates the first partial signature on the atomic swap
-		slate = api.countersign_atomic_swap(&slate, m)?;
+		slate = api.countersign_atomic_swap(&slate, m, None)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic3);
@@ -382,7 +382,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 		let mut w_lock = wallet2.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let tx = slate.tx_or_err()?;
-		libwallet::recover_atomic_nonce(&mut **w, mask2, &slate, &tx)?
+		libwallet::recover_atomic_nonce(&mut **w, mask2, &slate, &tx.kernels()[0])?
 	};
 
 	assert_eq!(rec_atomic_nonce, atomic_nonce);
@@ -420,7 +420,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 
 	wallet::controller::owner_single_use(Some(wallet1.clone()), mask1.clone(), None, |api, m| {
 		// wallet 1 creates the first partial signature on the atomic swap
-		slate = api.countersign_atomic_swap(&slate, m)?;
+		slate = api.countersign_atomic_swap(&slate, m, None)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic3);
@@ -436,7 +436,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 		let mut w_lock = wallet1.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let tx = slate.tx_or_err()?;
-		libwallet::recover_atomic_nonce(&mut **w, mask1, &slate, &tx)?
+		libwallet::recover_atomic_nonce(&mut **w, mask1, &slate, &tx.kernels()[0])?
 	};
 
 	assert_eq!(rec_atomic_nonce, atomic_nonce);
