@@ -19,7 +19,8 @@ use crate::api_impl::owner::{check_ttl, post_tx};
 use crate::api_impl::owner::{finalize_atomic_swap, finalize_tx as owner_finalize};
 use crate::grin_core::core::FeeFields;
 use crate::grin_keychain::{Keychain, SwitchCommitmentType};
-use crate::grin_util::secp::key::SecretKey;
+use crate::grin_util::secp::key::{PublicKey, SecretKey};
+use crate::grin_util::ToHex;
 use crate::internal::{selection, tx, updater};
 use crate::slate_versions::SlateVersion;
 use crate::{
@@ -192,6 +193,17 @@ where
 		filter.insert(atomic_int);
 		let atomic =
 			keychain.derive_key(ret_slate.amount, &atomic_id, SwitchCommitmentType::Regular)?;
+
+		let pub_atomic = PublicKey::from_secret_key(keychain.secp(), &atomic)?;
+
+		debug!(
+			"Your public atomic nonce: {}",
+			pub_atomic
+				.serialize_vec(keychain.secp(), true)
+				.as_ref()
+				.to_hex()
+		);
+		debug!("Use this key to lock funds on the other chain.\n");
 
 		let mut batch = w.batch(keychain_mask)?;
 		batch.save_atomic_nonce(&atomic_id, &atomic)?;

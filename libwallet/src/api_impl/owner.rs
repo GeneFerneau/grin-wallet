@@ -18,12 +18,12 @@ use uuid::Uuid;
 
 use crate::grin_core::core::hash::Hashed;
 use crate::grin_core::core::Transaction;
-use crate::grin_util::secp::key::SecretKey;
-use crate::grin_util::Mutex;
+use crate::grin_util::secp::key::{PublicKey, SecretKey};
+use crate::grin_util::{Mutex, ToHex};
 use crate::util::{OnionV3Address, OnionV3AddressError};
 
 use crate::api_impl::owner_updater::StatusMessage;
-use crate::grin_keychain::{Identifier, Keychain};
+use crate::grin_keychain::{Identifier, Keychain, SwitchCommitmentType};
 use crate::internal::{keys, scan, selection, tx, updater};
 use crate::slate::{KernelFeaturesArgs, PaymentInfo, Slate, SlateState, TxFlow};
 use crate::types::{AcctPathMapping, NodeClient, TxLogEntry, WalletBackend, WalletInfo};
@@ -821,6 +821,19 @@ where
 
 	filter.insert(derive_path as u64);
 	let atomic_id = Slate::create_atomic_id(derive_path as u64);
+
+	let atomic = keychain.derive_key(slate.amount, &atomic_id, SwitchCommitmentType::Regular)?;
+	let pub_atomic = PublicKey::from_secret_key(keychain.secp(), &atomic)?;
+
+	debug!(
+		"Your public atomic nonce: {}",
+		pub_atomic
+			.serialize_vec(keychain.secp(), true)
+			.as_ref()
+			.to_hex()
+	);
+	debug!("Use this key to lock funds on the other chain.\n");
+
 	slate.atomic_id = Some(atomic_id);
 
 	let mut context = if args.late_lock.unwrap_or(false) {
