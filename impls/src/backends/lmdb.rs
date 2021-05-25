@@ -31,8 +31,8 @@ use crate::store::{self, option_to_not_found, to_key, to_key_u64};
 use crate::core::core::Transaction;
 use crate::core::ser;
 use crate::libwallet::{
-	AcctPathMapping, AtomicFilter, Context, Error, ErrorKind, NodeClient, OutputData,
-	ScannedBlockInfo, TxLogEntry, WalletBackend, WalletInitStatus, WalletOutputBatch,
+	AcctPathMapping, Context, Error, ErrorKind, NodeClient, OutputData, ScannedBlockInfo,
+	TxLogEntry, WalletBackend, WalletInitStatus, WalletOutputBatch,
 };
 use crate::util::secp::constants::SECRET_KEY_SIZE;
 use crate::util::secp::key::SecretKey;
@@ -55,10 +55,9 @@ const LAST_SCANNED_BLOCK: u8 = b'l';
 const LAST_SCANNED_KEY: &str = "LAST_SCANNED_KEY";
 const WALLET_INIT_STATUS: u8 = b'w';
 const WALLET_INIT_STATUS_KEY: &str = "WALLET_INIT_STATUS";
+const ATOMIC_ID_PREFIX: u8 = b'm';
 const ATOMIC_NONCE_PREFIX: u8 = b'n';
 const RECOVERED_ATOMIC_NONCE_PREFIX: u8 = b'r';
-const ATOMIC_FILTER_PREFIX: u8 = b'f';
-const ATOMIC_FILTER_KEY: &'static [u8] = b"ATOMIC_SWAP_FILTER";
 
 /// test to see if database files exist in the current directory. If so,
 /// use a DB backend for all operations
@@ -137,20 +136,12 @@ where
 	Ok(ret_atomic)
 }
 
-fn atomic_filter_key<K>(keychain: &K) -> Result<[u8; SECRET_KEY_SIZE], Error>
-where
-	K: Keychain,
-{
-	let root_key = keychain.derive_key(0, &K::root_key_id(), SwitchCommitmentType::Regular)?;
-	//derive XOE value for storing public atomic nonce
-	// h(root_key|"ATOMIC_SWAP_FILTER")
-	let mut hasher = Blake2b::new(SECRET_KEY_SIZE);
-	hasher.update(&root_key.0);
-	hasher.update(&ATOMIC_FILTER_KEY[..]);
-	let atomic_filter_key = hasher.finalize();
-	let mut ret_atomic = [0; SECRET_KEY_SIZE];
-	ret_atomic.copy_from_slice(&atomic_filter_key.as_bytes()[0..SECRET_KEY_SIZE]);
-	Ok(ret_atomic)
+fn default_parent_atomic_id() -> Identifier {
+	ExtKeychain::derive_key_id(
+		2, 0x6d776174, /* 'mwat' */
+		0x6f6d6963, /* 'omic' */
+		0, 0,
+	)
 }
 
 pub struct LMDBBackend<'ck, C, K>
@@ -166,6 +157,8 @@ where
 	pub master_checksum: Box<Option<Blake2bResult>>,
 	/// Parent path to use by default for output operations
 	parent_key_id: Identifier,
+	/// Atomic swap path to use by default for nonce operations
+	parent_atomic_id: Identifier,
 	/// wallet to node client
 	w2n_client: C,
 	///phantom
@@ -211,6 +204,7 @@ where
 			keychain: None,
 			master_checksum: Box::new(None),
 			parent_key_id: LMDBBackend::<C, K>::default_path(),
+			parent_atomic_id: LMDBBackend::<C, K>::default_atomic_path(),
 			w2n_client: n_client,
 			_phantom: &PhantomData,
 		};
@@ -222,6 +216,13 @@ where
 		// in the BIP32 spec. Parent is account 0 at level 2, child output identifiers
 		// are all at level 3
 		ExtKeychain::derive_key_id(2, 0, 0, 0, 0)
+	}
+
+	fn default_atomic_path() -> Identifier {
+		// return the default atomic nonce wallet path, corresponding to the default account
+		// offset for atomic nonce keys. Parent is account `hex(b"mwatomic")` at level 2,
+		// child atomic nonce identifiers are all at level 3
+		default_parent_atomic_id()
 	}
 
 	/// Just test to see if database files exist in the current directory. If
@@ -502,6 +503,65 @@ where
 		Ok(Identifier::from_path(&return_path))
 	}
 
+	fn current_atomic_id<'a>(&mut self) -> Result<Identifier, Error> {
+		let index = {
+			let batch = self.db.batch()?;
+			let atomic_key = to_key(
+				ATOMIC_ID_PREFIX,
+				&mut self.parent_atomic_id.to_bytes().to_vec(),
+			);
+			match batch.get_ser(&atomic_key)? {
+				Some(idx) => idx,
+				None => 0,
+			}
+		};
+		let mut return_path = self.parent_atomic_id.to_path();
+		return_path.depth += 1;
+		return_path.path[return_path.depth as usize - 1] = ChildNumber::from(index);
+		Ok(Identifier::from_path(&return_path))
+	}
+
+	fn next_atomic_id<'a>(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+	) -> Result<Identifier, Error> {
+		let mut atomic_idx = {
+			let batch = self.db.batch()?;
+			let atomic_key = to_key(
+				ATOMIC_ID_PREFIX,
+				&mut self.parent_atomic_id.to_bytes().to_vec(),
+			);
+			match batch.get_ser(&atomic_key)? {
+				Some(idx) => idx,
+				None => 0,
+			}
+		};
+		let mut return_path = self.parent_atomic_id.to_path();
+		return_path.depth += 1;
+		return_path.path[return_path.depth as usize - 1] = ChildNumber::from(atomic_idx);
+		atomic_idx += 1;
+		let mut batch = self.batch(keychain_mask)?;
+		batch.save_atomic_index(atomic_idx)?;
+		batch.commit()?;
+		Ok(Identifier::from_path(&return_path))
+	}
+
+	fn get_used_atomic_id(&mut self, id: &Uuid) -> Result<Identifier, Error> {
+		let parent_atomic_id = self.parent_atomic_id.clone();
+		let atomic_idx = {
+			let batch = self.db.batch()?;
+			let atomic_key = to_key(ATOMIC_ID_PREFIX, &mut id.as_bytes().to_vec());
+			match batch.get_ser(&atomic_key)? {
+				Some(idx) => idx,
+				None => 0,
+			}
+		};
+		let mut return_path = parent_atomic_id.to_path();
+		return_path.depth += 1;
+		return_path.path[return_path.depth as usize - 1] = ChildNumber::from(atomic_idx);
+		Ok(Identifier::from_path(&return_path))
+	}
+
 	fn last_confirmed_height<'a>(&mut self) -> Result<u64, Error> {
 		let batch = self.db.batch()?;
 		let height_key = to_key(
@@ -589,20 +649,6 @@ where
 			*x ^= n;
 		}
 		Ok(SecretKey::from_slice(keychain.secp(), xor_key.as_ref())?)
-	}
-
-	fn get_atomic_filter<'a>(
-		&mut self,
-		keychain_mask: Option<&SecretKey>,
-	) -> Result<AtomicFilter, Error> {
-		let filter_in = atomic_filter_key(&self.keychain(keychain_mask)?)?;
-		let filter_key = to_key(ATOMIC_FILTER_PREFIX, &mut filter_in.to_vec());
-		let batch = self.db.batch()?;
-		let filter: AtomicFilter = match batch.get_ser(&filter_key)? {
-			Some(f) => f,
-			None => return Err(ErrorKind::GenericError("missing atomic filter".into()).into()),
-		};
-		Ok(filter)
 	}
 }
 
@@ -757,6 +803,27 @@ where
 		Ok(())
 	}
 
+	fn save_atomic_index(&mut self, atomic_idx: u32) -> Result<(), Error> {
+		let parent_atomic_id = default_parent_atomic_id();
+		let atomic_key = to_key(ATOMIC_ID_PREFIX, &mut parent_atomic_id.to_bytes().to_vec());
+		self.db
+			.borrow()
+			.as_ref()
+			.unwrap()
+			.put_ser(&atomic_key, &atomic_idx)?;
+		Ok(())
+	}
+
+	fn save_used_atomic_index(&mut self, id: &Uuid, atomic_idx: u32) -> Result<(), Error> {
+		let atomic_key = to_key(ATOMIC_ID_PREFIX, &mut id.as_bytes().to_vec());
+		self.db
+			.borrow()
+			.as_ref()
+			.unwrap()
+			.put_ser(&atomic_key, &atomic_idx)?;
+		Ok(())
+	}
+
 	fn save_tx_log_entry(
 		&mut self,
 		tx_in: TxLogEntry,
@@ -875,17 +942,6 @@ where
 			.as_ref()
 			.unwrap()
 			.put_ser(&nonce_key, &xor_key.to_vec())?;
-		Ok(())
-	}
-
-	fn save_atomic_filter(&mut self, filter: &AtomicFilter) -> Result<(), Error> {
-		let filter_in = atomic_filter_key(self.keychain())?;
-		let filter_key = to_key(ATOMIC_FILTER_PREFIX, &mut filter_in.to_vec());
-		self.db
-			.borrow()
-			.as_ref()
-			.unwrap()
-			.put_ser(&filter_key, filter)?;
 		Ok(())
 	}
 }

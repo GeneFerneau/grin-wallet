@@ -19,6 +19,7 @@ extern crate grin_wallet_impls as impls;
 
 use grin_wallet_libwallet as libwallet;
 use grin_wallet_util::grin_core as core;
+use grin_wallet_util::grin_keychain::{Keychain, SwitchCommitmentType};
 
 use impls::test_framework::{self, LocalWalletClient};
 use libwallet::{InitTxArgs, Slate, SlateState, TxFlow};
@@ -118,8 +119,12 @@ fn atomic_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error> {
 	let atomic_nonce = {
 		let mut w_lock = wallet2.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
-		let atomic_id = slate.atomic_id.clone().unwrap();
-		w.get_atomic_nonce(mask2, &atomic_id)?
+		let atomic_id = w.get_used_atomic_id(&slate.id)?;
+		w.keychain(mask2).unwrap().derive_key(
+			slate.amount,
+			&atomic_id,
+			SwitchCommitmentType::Regular,
+		)?
 	};
 
 	wallet::controller::owner_single_use(Some(wallet1.clone()), mask1.clone(), None, |api, m| {
@@ -239,8 +244,9 @@ fn atomic_refund_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error>
 	let atomic_nonce = {
 		let mut w_lock = wallet1.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
-		let atomic_id = slate.atomic_id.clone().unwrap();
-		w.get_atomic_nonce(mask1, &atomic_id)?
+		let atomic_id = w.get_used_atomic_id(&slate.id)?;
+		w.keychain(mask1)?
+			.derive_key(slate.amount, &atomic_id, SwitchCommitmentType::Regular)?
 	};
 
 	wallet::controller::owner_single_use(Some(wallet2.clone()), mask2.clone(), None, |api, m| {
@@ -357,11 +363,14 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 	// Get the sender's atomic nonce created in `receive_atomic_tx`
 	// This is one of the keys locking the multisig transaction on the other chain
 	// Only revealed if the refund transaction is fully signed + posted
-	let atomic_nonce = {
+	let (atomic_id, atomic_nonce) = {
 		let mut w_lock = wallet1.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
-		let atomic_id = slate.atomic_id.clone().unwrap();
-		w.get_atomic_nonce(mask1, &atomic_id)?
+		let id = w.get_used_atomic_id(&slate.id)?;
+		let nonce =
+			w.keychain(mask1)?
+				.derive_key(slate.amount, &id, SwitchCommitmentType::Regular)?;
+		(id, nonce)
 	};
 
 	wallet::controller::owner_single_use(Some(wallet2.clone()), mask2.clone(), None, |api, m| {
@@ -387,7 +396,6 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 
 	assert_eq!(rec_atomic_nonce, atomic_nonce);
 
-	let atomic_id = slate.atomic_id.clone().unwrap();
 	wallet::controller::owner_single_use(Some(wallet1.clone()), mask1, None, |api, m| {
 		// Wallet 1 inititates the main atomic swap transaction
 		let args = InitTxArgs {
@@ -412,8 +420,9 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 	let atomic_nonce = {
 		let mut w_lock = wallet2.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
-		let atomic_id = slate.atomic_id.clone().unwrap();
-		w.get_atomic_nonce(mask2, &atomic_id)?
+		let atomic_id = w.get_used_atomic_id(&slate.id)?;
+		w.keychain(mask2)?
+			.derive_key(slate.amount, &atomic_id, SwitchCommitmentType::Regular)?
 	};
 
 	assert_eq!(slate.state, SlateState::Atomic2);

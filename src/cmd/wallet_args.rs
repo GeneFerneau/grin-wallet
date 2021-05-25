@@ -289,6 +289,18 @@ fn parse_u64_or_none(arg: Option<&str>) -> Option<u64> {
 	}
 }
 
+// parses a number, returns None if argument is None, or value is absent
+fn parse_u32_or_none(arg: Option<&str>) -> Option<u32> {
+	let val = match arg {
+		Some(a) => a.parse::<u32>(),
+		None => return None,
+	};
+	match val {
+		Ok(v) => Some(v),
+		Err(_) => None,
+	}
+}
+
 pub fn parse_global_args(
 	config: &WalletConfig,
 	args: &ArgMatches,
@@ -495,7 +507,7 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 
 	let outfile = parse_optional(args, "outfile")?;
 
-	let atomic_id = parse_u64_or_none(args.value_of("atomic_id"));
+	let derive_path = parse_u32_or_none(args.value_of("derive_path"));
 
 	Ok(command::SendArgs {
 		amount: amount,
@@ -512,7 +524,7 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 		target_slate_version: target_slate_version,
 		outfile,
 		skip_tor: args.is_present("manual"),
-		atomic_id,
+		derive_path,
 	})
 }
 
@@ -580,11 +592,13 @@ pub fn parse_recover_atomic_args(
 pub fn parse_get_atomic_nonces_args(
 	args: &ArgMatches,
 ) -> Result<command::GetAtomicNoncesArgs, ParseError> {
-	let id = parse_u64_or_none(args.value_of("id")).ok_or(ParseError::ArgumentError(
-		"missing or invalid atomic ID".into(),
+	let id = parse_u32_or_none(args.value_of("id"))
+		.ok_or(ParseError::ArgumentError("missing atomic ID".into()))?;
+	let amount = parse_u64_or_none(args.value_of("amount")).ok_or(ParseError::ArgumentError(
+		"missing atomic swap amount".into(),
 	))?;
 
-	Ok(command::GetAtomicNoncesArgs { id })
+	Ok(command::GetAtomicNoncesArgs { id, amount })
 }
 
 pub fn parse_unpack_args(args: &ArgMatches) -> Result<command::ReceiveArgs, ParseError> {
@@ -1212,12 +1226,6 @@ where
 		}
 		("send_atomic", Some(args)) => {
 			let a = arg_parse!(parse_send_args(&args));
-			if a.atomic_id.is_none() {
-				return Err(ErrorKind::GenericError(
-					"Sending an atomic swap without atomic ID, use --atomic_id <id>".into(),
-				)
-				.into());
-			}
 			command::send(
 				owner_api,
 				km,

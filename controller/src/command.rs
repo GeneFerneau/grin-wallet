@@ -259,7 +259,7 @@ pub struct SendArgs {
 	pub ttl_blocks: Option<u64>,
 	pub skip_tor: bool,
 	pub outfile: Option<String>,
-	pub atomic_id: Option<u64>,
+	pub derive_path: Option<u32>,
 }
 
 pub fn send<L, C, K>(
@@ -276,13 +276,7 @@ where
 	C: NodeClient + 'static,
 	K: keychain::Keychain + 'static,
 {
-	let atomic_id = if tx_flow == TxFlow::Atomic {
-		args.atomic_id.ok_or(Error::from(ErrorKind::GenericError(
-			"missing atomic ID".into(),
-		)))? as u32
-	} else {
-		0
-	};
+	let derive_path = args.derive_path.unwrap_or(0);
 	let mut slate = Slate::blank(2, tx_flow.clone());
 	controller::owner_single_use(None, keychain_mask, Some(owner_api), |api, m| {
 		if args.estimate_selection_strategies {
@@ -301,7 +295,7 @@ where
 					};
 					let slate = match tx_flow {
 						TxFlow::Standard => api.init_send_tx(m, init_args)?,
-						TxFlow::Atomic => api.init_atomic_swap(m, init_args, atomic_id)?,
+						TxFlow::Atomic => api.init_atomic_swap(m, init_args, derive_path)?,
 						_ => api.init_send_tx(m, init_args)?,
 					};
 
@@ -327,7 +321,7 @@ where
 			};
 			let result = match tx_flow {
 				TxFlow::Standard => api.init_send_tx(m, init_args),
-				TxFlow::Atomic => api.init_atomic_swap(m, init_args, atomic_id),
+				TxFlow::Atomic => api.init_atomic_swap(m, init_args, derive_path),
 				_ => api.init_send_tx(m, init_args),
 			};
 			slate = match result {
@@ -910,7 +904,8 @@ where
 /// Get atomic nonces args
 #[derive(Clone)]
 pub struct GetAtomicNoncesArgs {
-	pub id: u64,
+	pub id: u32,
+	pub amount: u64,
 }
 
 /// Get atomic nonces from storage to recover funds on the other chain
@@ -925,10 +920,10 @@ where
 	K: keychain::Keychain + 'static,
 {
 	controller::owner_single_use(None, keychain_mask, Some(owner_api), |api, m| {
-		let result = api.get_atomic_nonces(m, args.id);
+		let result = api.get_atomic_nonces(m, args.id, args.amount);
 		match result {
 			Ok(_) => {
-				info!("Atomic nonce recovered successfully.");
+				info!("Atomic nonces recovered successfully.");
 				Ok(())
 			}
 			Err(e) => {

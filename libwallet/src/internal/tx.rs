@@ -478,13 +478,8 @@ where
 	// signature from the full signature
 	let mut sp_s = SecretKey::from_slice(secp, &part_sig.as_ref()[32..])?;
 	// The atomic_nonce contains sr' from the responder's adaptor signature
-	let atomic_id = &slate
-		.atomic_id
-		.as_ref()
-		.ok_or(Error::from(ErrorKind::GenericError(
-			"missing atomic ID".into(),
-		)))?;
-	let mut srp = wallet.get_atomic_nonce(keychain_mask, atomic_id)?;
+	let atomic_id = wallet.get_used_atomic_id(&slate.id)?;
+	let mut srp = wallet.get_recovered_atomic_nonce(keychain_mask, &atomic_id)?;
 
 	// Subtract the initiator's partial signature from the full signature
 	sp_s.neg_assign(secp)?;

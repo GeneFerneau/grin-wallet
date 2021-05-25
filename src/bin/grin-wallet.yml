@@ -260,10 +260,9 @@ subcommands:
   - send_atomic:
       about: Builds an atomic swap main transaction to send coins and sends to the recipient via the Slatepack workflow
       args:
-        - atomic_id:
-            help: Identifier to derive the atomic swap nonce, must only be used once
-            short: a
-            long: atomic_id
+        - derive_path:
+            help: Identifier to derive the key for the payment proof 
+            long: derive_path
             default_value: "0"
             takes_value: true
         - refund:
@@ -404,6 +403,10 @@ subcommands:
             help: Unique identifier to recover atomic swap nonces
             short: i
             long: id
+            takes_value: true
+        - amount:
+            help: Atomic swap amount
+            long: amount
             takes_value: true
   - outputs:
       about: Raw wallet output info (list of outputs)

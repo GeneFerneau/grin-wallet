@@ -22,13 +22,13 @@ use crate::config::{TorConfig, WalletConfig};
 use crate::core::global;
 use crate::impls::HttpSlateSender;
 use crate::impls::SlateSender as _;
-use crate::keychain::{Identifier, Keychain};
+use crate::keychain::{Identifier, Keychain, SwitchCommitmentType};
 use crate::libwallet::api_impl::owner_updater::{start_updater_log_thread, StatusMessage};
 use crate::libwallet::api_impl::{owner, owner_updater};
 use crate::libwallet::{
-	AcctPathMapping, Error, ErrorKind, InitTxArgs, IssueInvoiceTxArgs, NodeClient,
-	NodeHeightResult, OutputCommitMapping, PaymentProof, Slate, Slatepack, SlatepackAddress,
-	TxFlow, TxLogEntry, WalletInfo, WalletInst, WalletLCProvider,
+	AcctPathMapping, Error, InitTxArgs, IssueInvoiceTxArgs, NodeClient, NodeHeightResult,
+	OutputCommitMapping, PaymentProof, Slate, Slatepack, SlatepackAddress, TxFlow, TxLogEntry,
+	WalletInfo, WalletInst, WalletLCProvider,
 };
 use crate::util::logger::LoggingConfig;
 use crate::util::secp::key::SecretKey;
@@ -1142,14 +1142,13 @@ where
 		keychain_mask: Option<&SecretKey>,
 		slate: &Slate,
 	) -> Result<(), Error> {
-		owner::recover_atomic_nonce(&mut self.wallet_inst.clone(), keychain_mask, slate)?;
-		let atomic_id = slate
-			.atomic_id
-			.as_ref()
-			.ok_or(Error::from(ErrorKind::GenericError(
-				"missing atomic nonce".into(),
-			)))?;
-		self.get_atomic_nonces(keychain_mask, Slate::atomic_id_to_int(atomic_id)?)
+		let atomic_id =
+			owner::recover_atomic_nonce(&mut self.wallet_inst.clone(), keychain_mask, slate)?;
+		self.get_atomic_nonces(
+			keychain_mask,
+			Slate::atomic_id_to_int(&atomic_id)?,
+			slate.amount,
+		)
 	}
 
 	/// Recover the atomic nonce from the second round adaptor signature, and the finalized kernel
@@ -1164,12 +1163,14 @@ where
 	pub fn get_atomic_nonces(
 		&self,
 		keychain_mask: Option<&SecretKey>,
-		id: u64,
+		id: u32,
+		amount: u64,
 	) -> Result<(), Error> {
 		let mut w_lock = self.wallet_inst.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let atomic_id = Slate::create_atomic_id(id);
-		let our_nonce = w.get_atomic_nonce(keychain_mask, &atomic_id)?;
+		let keychain = w.keychain(keychain_mask)?;
+		let our_nonce = keychain.derive_key(amount, &atomic_id, SwitchCommitmentType::Regular)?;
 		let rec_nonce = w.get_recovered_atomic_nonce(keychain_mask, &atomic_id)?;
 		info!("Our atomic nonce:");
 		info!("{}\n", our_nonce.to_hex());

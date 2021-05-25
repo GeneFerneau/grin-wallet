@@ -28,7 +28,7 @@ use crate::internal::{keys, scan, selection, tx, updater};
 use crate::slate::{KernelFeaturesArgs, PaymentInfo, Slate, SlateState, TxFlow};
 use crate::types::{AcctPathMapping, NodeClient, TxLogEntry, WalletBackend, WalletInfo};
 use crate::{
-	address, wallet_lock, AtomicFilter, Context, InitTxArgs, IssueInvoiceTxArgs, NodeHeightResult,
+	address, wallet_lock, Context, InitTxArgs, IssueInvoiceTxArgs, NodeHeightResult,
 	OutputCommitMapping, PaymentProof, ScannedBlockInfo, Slatepack, SlatepackAddress, Slatepacker,
 	SlatepackerArgs, TxLogEntryType, WalletInitStatus, WalletInst, WalletLCProvider,
 };
@@ -811,30 +811,6 @@ where
 
 	let height = w.w2n_client().get_chain_tip()?.0;
 	let keychain = w.keychain(keychain_mask)?;
-	let mut filter = match w.get_atomic_filter(keychain_mask) {
-		Ok(f) => f,
-		Err(_) => AtomicFilter::new(100, 0.001),
-	};
-	if filter.contains(derive_path as u64) {
-		return Err(ErrorKind::GenericError("atomic nonce already used".into()).into());
-	}
-
-	filter.insert(derive_path as u64);
-	let atomic_id = Slate::create_atomic_id(derive_path as u64);
-
-	let atomic = keychain.derive_key(slate.amount, &atomic_id, SwitchCommitmentType::Regular)?;
-	let pub_atomic = PublicKey::from_secret_key(keychain.secp(), &atomic)?;
-
-	debug!(
-		"Your public atomic nonce: {}",
-		pub_atomic
-			.serialize_vec(keychain.secp(), true)
-			.as_ref()
-			.to_hex()
-	);
-	debug!("Use this key to lock funds on the other chain.\n");
-
-	slate.atomic_id = Some(atomic_id);
 
 	let mut context = if args.late_lock.unwrap_or(false) {
 		// use late_lock context for initial height_lock tx,
@@ -893,7 +869,6 @@ where
 	{
 		let mut batch = w.batch(keychain_mask)?;
 		batch.save_private_context(slate.id.as_bytes(), &context)?;
-		batch.save_atomic_filter(&filter)?;
 		batch.commit()?;
 	}
 
@@ -936,15 +911,24 @@ where
 	let atomic_nonce = SecretKey::from_slice(keychain.secp(), &adaptor_sig.as_ref()[32..])?;
 
 	{
-		let atomic_id =
-			&ret_slate
-				.atomic_id
+		let atomic_id = w.next_atomic_id(keychain_mask)?;
+		let atomic =
+			keychain.derive_key(slate.amount, &atomic_id, SwitchCommitmentType::Regular)?;
+		let pub_atomic = PublicKey::from_secret_key(keychain.secp(), &atomic)?;
+
+		debug!(
+			"Your public atomic nonce: {}",
+			pub_atomic
+				.serialize_vec(keychain.secp(), true)
 				.as_ref()
-				.ok_or(Error::from(ErrorKind::GenericError(
-					"missing atomic ID".into(),
-				)))?;
+				.to_hex()
+		);
+		debug!("Use this key to lock funds on the other chain.\n");
+
 		let mut batch = w.batch(keychain_mask)?;
-		batch.save_atomic_nonce(atomic_id, &atomic_nonce)?;
+		batch.save_recovered_atomic_nonce(&atomic_id, &atomic_nonce)?;
+		let atomic_idx = Slate::atomic_id_to_int(&atomic_id)?;
+		batch.save_used_atomic_index(&slate.id, atomic_idx)?;
 		batch.commit()?;
 	}
 
@@ -1169,7 +1153,7 @@ pub fn recover_atomic_nonce<'a, L, C, K>(
 	wallet_inst: &mut Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
 	keychain_mask: Option<&SecretKey>,
 	slate: &Slate,
-) -> Result<(), Error>
+) -> Result<Identifier, Error>
 where
 	L: WalletLCProvider<'a, C, K>,
 	C: NodeClient + 'a,
@@ -1185,15 +1169,12 @@ where
 		Some(slate.ttl_cutoff_height),
 	)? {
 		let nonce = tx::recover_atomic_nonce(&mut **w, keychain_mask, slate, &kernel)?;
-		let atomic_id = slate
-			.atomic_id
-			.as_ref()
-			.ok_or(Error::from(ErrorKind::StoredTx("missing atomic ID".into())))?;
-		info!("Saving atomic nonce with atomic ID: {}, use with `get_atomic_nonces` to retrieve from storage", Slate::atomic_id_to_int(atomic_id)?);
+		let atomic_id = w.get_used_atomic_id(&slate.id)?;
+		info!("Saving atomic nonce with atomic ID: {}, use with `get_atomic_nonces` to retrieve from storage", Slate::atomic_id_to_int(&atomic_id)?);
 		let mut batch = w.batch(keychain_mask)?;
-		batch.save_recovered_atomic_nonce(atomic_id, &nonce)?;
+		batch.save_recovered_atomic_nonce(&atomic_id, &nonce)?;
 		batch.commit()?;
-		Ok(())
+		Ok(atomic_id)
 	} else {
 		Err(
 			ErrorKind::StoredTx("missing finalized transaction kernel for the atomic swap".into())

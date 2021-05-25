@@ -573,7 +573,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"-a",
 		"mining",
 		"send_atomic",
-		"--atomic_id",
+		"--derive_path",
 		"0",
 		"-r", // create a refund transaction
 		"5",
@@ -645,7 +645,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"-a",
 		"account_1",
 		"send_atomic",
-		"--atomic_id",
+		"--derive_path",
 		"0",
 		"5",
 	];
@@ -732,7 +732,9 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"password2",
 		"get_atomic_nonces",
 		"-i",
-		"0", // atomic ID
+		"1", // atomic ID
+		"--amount",
+		"5",
 	];
 	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
 

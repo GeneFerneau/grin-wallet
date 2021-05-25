@@ -24,8 +24,8 @@ use crate::grin_util::ToHex;
 use crate::internal::{selection, tx, updater};
 use crate::slate_versions::SlateVersion;
 use crate::{
-	address, AtomicFilter, BlockFees, CbData, Error, ErrorKind, NodeClient, Slate, SlateState,
-	TxLogEntryType, VersionInfo, WalletBackend,
+	address, BlockFees, CbData, Error, ErrorKind, NodeClient, Slate, SlateState, TxLogEntryType,
+	VersionInfo, WalletBackend,
 };
 
 const FOREIGN_API_VERSION: u16 = 2;
@@ -177,20 +177,8 @@ where
 
 	let is_height_lock = ret_slate.kernel_features == 2;
 	// derive atomic nonce from the slate's `atomic_id`
-	let atomic_nonce = {
-		let atomic_id = match &ret_slate.atomic_id {
-			Some(aid) => aid.clone(),
-			None => return Err(ErrorKind::GenericError("missing atomic ID".into()).into()),
-		};
-		let atomic_int = Slate::atomic_id_to_int(&atomic_id)?;
-		let mut filter = match w.get_atomic_filter(keychain_mask) {
-			Ok(f) => f,
-			Err(_) => AtomicFilter::new(100, 0.001),
-		};
-		if filter.contains(atomic_int) {
-			return Err(ErrorKind::GenericError("atomic nonce already used".into()).into());
-		}
-		filter.insert(atomic_int);
+	let (atomic_id, atomic_nonce) = {
+		let atomic_id = w.next_atomic_id(keychain_mask)?;
 		let atomic =
 			keychain.derive_key(ret_slate.amount, &atomic_id, SwitchCommitmentType::Regular)?;
 
@@ -205,12 +193,7 @@ where
 		);
 		debug!("Use this key to lock funds on the other chain.\n");
 
-		let mut batch = w.batch(keychain_mask)?;
-		batch.save_atomic_nonce(&atomic_id, &atomic)?;
-		batch.save_atomic_filter(&filter)?;
-		batch.commit()?;
-
-		Some(atomic)
+		(atomic_id, Some(atomic))
 	};
 
 	let (input_ids, output_ids) = if is_height_lock {
@@ -243,6 +226,13 @@ where
 		atomic_nonce,
 		use_test_rng,
 	)?;
+
+	{
+		let atomic_idx = Slate::atomic_id_to_int(&atomic_id)?;
+		let mut batch = w.batch(keychain_mask)?;
+		batch.save_used_atomic_index(&ret_slate.id, atomic_idx)?;
+		batch.commit()?;
+	}
 
 	context.fee = Some(ret_slate.fee_fields.clone());
 	let excess = ret_slate.calc_excess(keychain.secp())?;

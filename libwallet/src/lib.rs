@@ -48,7 +48,6 @@ extern crate strum_macros;
 
 pub mod address;
 pub mod api_impl;
-mod atomic_filter;
 mod error;
 mod internal;
 mod slate;
@@ -71,7 +70,6 @@ pub use api_impl::types::{
 	BlockFees, InitTxArgs, InitTxSendArgs, IssueInvoiceTxArgs, NodeHeightResult,
 	OutputCommitMapping, PaymentProof, VersionInfo,
 };
-pub use atomic_filter::AtomicFilter;
 pub use internal::scan::scan;
 pub use internal::tx::recover_atomic_nonce;
 pub use slate_versions::ser as dalek_ser;

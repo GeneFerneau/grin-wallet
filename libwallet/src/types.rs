@@ -28,7 +28,7 @@ use crate::grin_util::secp::key::{PublicKey, SecretKey};
 use crate::grin_util::secp::{self, pedersen, Secp256k1};
 use crate::grin_util::{ToHex, ZeroingString};
 use crate::slate_versions::ser as dalek_ser;
-use crate::{AtomicFilter, InitTxArgs};
+use crate::InitTxArgs;
 use chrono::prelude::*;
 use ed25519_dalek::PublicKey as DalekPublicKey;
 use ed25519_dalek::Signature as DalekSignature;
@@ -229,6 +229,15 @@ where
 	/// Next child ID when we want to create a new output, based on current parent
 	fn next_child(&mut self, keychain_mask: Option<&SecretKey>) -> Result<Identifier, Error>;
 
+	/// Return the current atomic nonce index
+	fn current_atomic_id(&mut self) -> Result<Identifier, Error>;
+
+	/// Next atomic ID when we want to create a new atomic nonce
+	fn next_atomic_id(&mut self, keychain_mask: Option<&SecretKey>) -> Result<Identifier, Error>;
+
+	/// Get the atomic ID for the atomic swap associated with the given UUID
+	fn get_used_atomic_id(&mut self, id: &Uuid) -> Result<Identifier, Error>;
+
 	/// last verified height of outputs directly descending from the given parent key
 	fn last_confirmed_height(&mut self) -> Result<u64, Error>;
 
@@ -251,12 +260,6 @@ where
 		keychain_mask: Option<&SecretKey>,
 		atomic_id: &Identifier,
 	) -> Result<SecretKey, Error>;
-
-	/// Retrieves the atomic nonce filter from storage
-	fn get_atomic_filter(
-		&mut self,
-		keychain_mask: Option<&SecretKey>,
-	) -> Result<AtomicFilter, Error>;
 }
 
 /// Batch trait to update the output data backend atomically. Trying to use a
@@ -285,6 +288,12 @@ where
 
 	/// Save last stored child index of a given parent
 	fn save_child_index(&mut self, parent_key_id: &Identifier, child_n: u32) -> Result<(), Error>;
+
+	/// Save global atomic index under the current keychain mask
+	fn save_atomic_index(&mut self, atomic_idx: u32) -> Result<(), Error>;
+
+	/// Save an atomic index that has been used in an atomic swap
+	fn save_used_atomic_index(&mut self, id: &Uuid, atomic_idx: u32) -> Result<(), Error>;
 
 	/// Save last confirmed height of outputs for a given parent
 	fn save_last_confirmed_height(
@@ -339,9 +348,6 @@ where
 		atomic_id: &Identifier,
 		atomic_nonce: &SecretKey,
 	) -> Result<(), Error>;
-
-	/// Save atomic nonce filter for no nonce reuse
-	fn save_atomic_filter(&mut self, filter: &AtomicFilter) -> Result<(), Error>;
 }
 
 /// Encapsulate all wallet-node communication functions. No functions within libwallet
