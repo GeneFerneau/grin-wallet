@@ -619,8 +619,7 @@ pub trait OwnerRpc {
 					"payment_proof_recipient_address": "tgrin1xtxavwfgs48ckf3gk8wwgcndmn0nt4tvkl8a7ltyejjcy2mc6nfs9gm2lp",
 					"ttl_blocks": null,
 					"send_args": null
-				},
-				"derive_path": 0
+				}
 			},
 			"id": 1
 		}
@@ -633,14 +632,9 @@ pub trait OwnerRpc {
 			"result": {
 				"Ok": {
 					"amt": "6000000000",
-					"atomic_id": "046d7761746f6d69630000000000000000",
 					"fee": "23000000",
 					"id": "0436430c-2b02-624c-2032-570501212b00",
 					"off": "456498224e2a6850e073ab8fb5c32fcccfe70272c61759ea4ade53ae7dc367e6",
-					"proof": {
-						"raddr": "32cdd63928854f8b2628b1dce4626ddcdf35d56cb7cfdf7d64cca5822b78d4d3",
-						"saddr": "32cdd63928854f8b2628b1dce4626ddcdf35d56cb7cfdf7d64cca5822b78d4d3"
-					},
 					"sigs": [
 						{
 							"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
@@ -656,12 +650,8 @@ pub trait OwnerRpc {
 		# , 4, false, false, false, false, false);
 	```
 	*/
-	fn init_atomic_swap(
-		&self,
-		token: Token,
-		args: InitTxArgs,
-		derive_path: u32,
-	) -> Result<VersionedSlate, ErrorKind>;
+	fn init_atomic_swap(&self, token: Token, args: InitTxArgs)
+		-> Result<VersionedSlate, ErrorKind>;
 
 	/**
 		Networked version of [Owner::countersign_atomic_swap](struct.Owner.html#method.countersign_atomic_swap).
@@ -714,7 +704,6 @@ pub trait OwnerRpc {
 			"result": {
 				"Ok": {
 					"amt": "60000000000",
-					"atomic_id": "046d7761746f6d69630000000000000000",
 					"coms": [
 						{
 							"c": "087df32304c5d4ae8b2af0bc31e700019d722910ef87dd4eec3197b80b207e3045",
@@ -2000,11 +1989,9 @@ where
 		&self,
 		token: Token,
 		args: InitTxArgs,
-		derive_path: u32,
 	) -> Result<VersionedSlate, ErrorKind> {
-		let out_slate =
-			Owner::init_atomic_swap(self, (&token.keychain_mask).as_ref(), args, derive_path)
-				.map_err(|e| e.kind())?;
+		let out_slate = Owner::init_atomic_swap(self, (&token.keychain_mask).as_ref(), args)
+			.map_err(|e| e.kind())?;
 		let version = SlateVersion::V4;
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
@@ -2484,7 +2471,7 @@ pub fn run_doctest_owner(
 			..Default::default()
 		};
 		let mut slate = if countersign_atomic {
-			api_impl::owner::init_atomic_swap(&mut **w, (&mask1).as_ref(), args, 0, true).unwrap()
+			api_impl::owner::init_atomic_swap(&mut **w, (&mask1).as_ref(), args, true).unwrap()
 		} else {
 			api_impl::owner::init_send_tx(&mut **w, (&mask1).as_ref(), args, true).unwrap()
 		};

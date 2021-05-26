@@ -801,6 +801,7 @@ where
 	///
 	/// // . . .
 	/// // The slate has been recieved from the invoicer, somehow
+	/// # use grin_wallet_libwallet::TxFlow;
 	/// # let slate = Slate::blank(2, TxFlow::Invoice);
 	/// let args = InitTxArgs {
 	///     src_acct_name: None,
@@ -866,18 +867,11 @@ where
 		&self,
 		keychain_mask: Option<&SecretKey>,
 		args: InitTxArgs,
-		derive_path: u32,
 	) -> Result<Slate, Error> {
 		let mut w_lock = self.wallet_inst.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
 		let send_args = args.send_args.clone();
-		let slate = owner::init_atomic_swap(
-			&mut **w,
-			keychain_mask,
-			args,
-			derive_path,
-			self.doctest_mode,
-		)?;
+		let slate = owner::init_atomic_swap(&mut **w, keychain_mask, args, self.doctest_mode)?;
 		if let Some(sa) = send_args {
 			let tor_config_lock = self.tor_config.lock();
 			let tc = tor_config_lock.clone();

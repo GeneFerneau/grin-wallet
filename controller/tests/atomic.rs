@@ -101,8 +101,7 @@ fn atomic_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error> {
 			amount: 10,
 			..Default::default()
 		};
-		let derive_path = 0;
-		slate = api.init_atomic_swap(m, args, derive_path)?;
+		slate = api.init_atomic_swap(m, args)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic1);
@@ -226,8 +225,7 @@ fn atomic_refund_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Error>
 			late_lock: Some(true),
 			..Default::default()
 		};
-		let derive_path = 0;
-		slate = api.init_atomic_swap(m, args, derive_path)?;
+		slate = api.init_atomic_swap(m, args)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic1);
@@ -348,8 +346,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 			late_lock: Some(true),
 			..Default::default()
 		};
-		let derive_path = 0;
-		slate = api.init_atomic_swap(m, args, derive_path)?;
+		slate = api.init_atomic_swap(m, args)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic1);
@@ -404,8 +401,7 @@ fn atomic_end_to_end_tx_impl(test_dir: &'static str) -> Result<(), libwallet::Er
 		};
 		let mut atomic_bytes = [0; 8];
 		atomic_bytes.copy_from_slice(&atomic_id.to_bytes()[9..]);
-		let derive_path = u64::from_be_bytes(atomic_bytes) as u32;
-		slate = api.init_atomic_swap(m, args, derive_path)?;
+		slate = api.init_atomic_swap(m, args)?;
 		Ok(())
 	})?;
 	assert_eq!(slate.state, SlateState::Atomic1);

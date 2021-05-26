@@ -777,7 +777,6 @@ pub fn init_atomic_swap<'a, T: ?Sized, C, K>(
 	w: &mut T,
 	keychain_mask: Option<&SecretKey>,
 	args: InitTxArgs,
-	derive_path: u32,
 	use_test_rng: bool,
 ) -> Result<Slate, Error>
 where
@@ -812,7 +811,7 @@ where
 	let height = w.w2n_client().get_chain_tip()?.0;
 	let keychain = w.keychain(keychain_mask)?;
 
-	let mut context = if args.late_lock.unwrap_or(false) {
+	let context = if args.late_lock.unwrap_or(false) {
 		// use late_lock context for initial height_lock tx,
 		// initiated by the atomic swap receiver
 		let mut context = Context::new(keychain.secp(), &parent_key_id, use_test_rng, true);
@@ -848,21 +847,6 @@ where
 		slate.fill_round_1(&keychain, &mut context)?;
 		context
 	};
-
-	// Payment Proof, add addresses to slate and save address
-	if let Some(a) = args.payment_proof_recipient_address {
-		let sec_addr_key =
-			address::address_from_derivation_path(&keychain, &parent_key_id, derive_path)?;
-		let sender_address = OnionV3Address::from_private(&sec_addr_key.0)?;
-
-		slate.payment_proof = Some(PaymentInfo {
-			sender_address: sender_address.to_ed25519()?,
-			receiver_address: a.pub_key,
-			receiver_signature: None,
-		});
-
-		context.payment_proof_derivation_index = Some(derive_path);
-	}
 
 	// Save the aggsig context in our DB for when we
 	// receive the transaction back

@@ -276,7 +276,6 @@ where
 	C: NodeClient + 'static,
 	K: keychain::Keychain + 'static,
 {
-	let derive_path = args.derive_path.unwrap_or(0);
 	let mut slate = Slate::blank(2, tx_flow.clone());
 	controller::owner_single_use(None, keychain_mask, Some(owner_api), |api, m| {
 		if args.estimate_selection_strategies {
@@ -295,7 +294,7 @@ where
 					};
 					let slate = match tx_flow {
 						TxFlow::Standard => api.init_send_tx(m, init_args)?,
-						TxFlow::Atomic => api.init_atomic_swap(m, init_args, derive_path)?,
+						TxFlow::Atomic => api.init_atomic_swap(m, init_args)?,
 						_ => api.init_send_tx(m, init_args)?,
 					};
 
@@ -321,7 +320,7 @@ where
 			};
 			let result = match tx_flow {
 				TxFlow::Standard => api.init_send_tx(m, init_args),
-				TxFlow::Atomic => api.init_atomic_swap(m, init_args, derive_path),
+				TxFlow::Atomic => api.init_atomic_swap(m, init_args),
 				_ => api.init_send_tx(m, init_args),
 			};
 			slate = match result {
