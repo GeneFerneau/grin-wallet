@@ -190,6 +190,7 @@ impl SlateSender for HttpSlateSender {
 
 		let slate_send = match self.check_other_version(&url_str)? {
 			SlateVersion::V4 => VersionedSlate::into_version(slate.clone(), SlateVersion::V4)?,
+			SlateVersion::V5 => VersionedSlate::into_version(slate.clone(), SlateVersion::V5)?,
 		};
 		// Note: not using easy-jsonrpc as don't want the dependencies in this crate
 		let req = match finalize {
