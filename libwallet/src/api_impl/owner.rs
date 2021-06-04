@@ -14,19 +14,23 @@
 
 //! Generic implementation of owner API functions
 
+use rand::thread_rng;
 use uuid::Uuid;
 
 use crate::grin_core::core::hash::Hashed;
 use crate::grin_core::core::Transaction;
-use crate::grin_util::secp::key::SecretKey;
-use crate::grin_util::Mutex;
+use crate::grin_core::libtx::proof;
+use crate::grin_util::secp::key::{PublicKey, SecretKey};
+use crate::grin_util::{Mutex, ToHex};
 use crate::util::{OnionV3Address, OnionV3AddressError};
 
 use crate::api_impl::owner_updater::StatusMessage;
-use crate::grin_keychain::{Identifier, Keychain};
+use crate::grin_keychain::{Identifier, Keychain, SwitchCommitmentType};
 use crate::internal::{keys, scan, selection, tx, updater};
 use crate::slate::{PaymentInfo, Slate, SlateState, TxFlow};
-use crate::types::{AcctPathMapping, NodeClient, TxLogEntry, WalletBackend, WalletInfo};
+use crate::types::{
+	AcctPathMapping, NodeClient, OutputData, OutputStatus, TxLogEntry, WalletBackend, WalletInfo,
+};
 use crate::{
 	address, wallet_lock, InitTxArgs, IssueInvoiceTxArgs, NodeHeightResult, OutputCommitMapping,
 	PaymentProof, ScannedBlockInfo, Slatepack, SlatepackAddress, Slatepacker, SlatepackerArgs,
@@ -500,6 +504,7 @@ where
 	}
 
 	let height = w.w2n_client().get_chain_tip()?.0;
+	let is_multisig = args.is_multisig.unwrap_or(false);
 	let mut context = if args.late_lock.unwrap_or(false) {
 		tx::create_late_lock_context(
 			&mut *w,
@@ -522,6 +527,7 @@ where
 			args.selection_strategy_is_use_all,
 			&parent_key_id,
 			true,
+			is_multisig,
 			use_test_rng,
 		)?
 	};
@@ -555,6 +561,10 @@ where
 	}
 
 	slate.compact()?;
+
+	if slate.is_multisig() {
+		slate.state = SlateState::Multisig1;
+	}
 
 	Ok(slate)
 }
@@ -675,6 +685,7 @@ where
 		args.selection_strategy_is_use_all,
 		&parent_key_id,
 		false,
+		false,
 		use_test_rng,
 	)?;
 
@@ -725,6 +736,154 @@ where
 	ret_slate.remove_other_sigdata(&keychain, &context.sec_nonce, &context.sec_key)?;
 
 	ret_slate.state = SlateState::Invoice2;
+	Ok(ret_slate)
+}
+
+/// Perform initiator's step 1 + 2 of the multisig bulletproof to create
+/// tau_x, tau_one, tau_two keys
+pub fn process_multisig_tx<'a, T: ?Sized, C, K>(
+	w: &mut T,
+	keychain_mask: Option<&SecretKey>,
+	slate: &Slate,
+	use_test_rng: bool,
+) -> Result<Slate, Error>
+where
+	T: WalletBackend<'a, C, K>,
+	C: NodeClient + 'a,
+	K: Keychain + 'a,
+{
+	let keychain = w.keychain(keychain_mask)?;
+	let mut context = w.get_private_context(keychain_mask, slate.id.as_bytes())?;
+	let mut ret_slate = slate.clone();
+
+	let secp = keychain.secp();
+	let key_id = slate.create_multisig_id();
+	let (_, pub_nonce) = context.get_public_keys(secp);
+	let oth_part_data = if use_test_rng {
+		assert_eq!(slate.participant_data.len(), 1);
+		error!("RECEIVED TX SLATE");
+		println!("{}", serde_json::to_string_pretty(&slate).unwrap());
+		&slate.participant_data[0]
+	} else {
+		slate
+			.participant_data
+			.iter()
+			.find(|d| d.public_nonce != pub_nonce)
+			.ok_or(Error::from(ErrorKind::GenericError(
+				"missing other participant data".into(),
+			)))?
+	};
+	let oth_part_commit =
+		oth_part_data
+			.part_commit
+			.clone()
+			.ok_or(Error::from(ErrorKind::Commit(
+				"missing other partial commit".into(),
+			)))?;
+	let partial_commit = keychain.commit(slate.amount, &key_id, SwitchCommitmentType::Regular)?;
+	let commit_sum = secp.commit_sum(vec![partial_commit, oth_part_commit], vec![])?;
+
+	let common_nonce = context.create_common_nonce(secp, &oth_part_data.public_nonce)?;
+
+	// calculate initiator's tau_one and tau_two public keys for the multisig bulletproof
+	context.tau_one = Some(PublicKey::new());
+	context.tau_two = Some(PublicKey::new());
+	let _ = proof::create_multisig(
+		&keychain,
+		&proof::ProofBuilder::new(&keychain),
+		slate.amount,
+		&key_id,
+		SwitchCommitmentType::Regular,
+		&common_nonce,
+		None,
+		context.tau_one.as_mut(),
+		context.tau_two.as_mut(),
+		&[commit_sum.clone()],
+		1,
+		None,
+	)?;
+
+	if oth_part_data.tau_one.is_none() || oth_part_data.tau_two.is_none() {
+		return Err(ErrorKind::GenericError(
+			"missing other participant's tau public key(s)".into(),
+		)
+		.into());
+	}
+
+	// calculate tau_one_sum and tau_two_sum
+	let mut tau_one_sum = Some(PublicKey::from_combination(
+		secp,
+		vec![
+			context.tau_one.as_ref().unwrap(),
+			oth_part_data.tau_one.as_ref().unwrap(),
+		],
+	)?);
+	let mut tau_two_sum = Some(PublicKey::from_combination(
+		secp,
+		vec![
+			context.tau_two.as_ref().unwrap(),
+			oth_part_data.tau_two.as_ref().unwrap(),
+		],
+	)?);
+
+	// calculate initiator's tau_x secret key for the multisig bulletproof
+	context.tau_x = Some(SecretKey::new(secp, &mut thread_rng()));
+	let _ = proof::create_multisig(
+		&keychain,
+		&proof::ProofBuilder::new(&keychain),
+		slate.amount,
+		&key_id,
+		SwitchCommitmentType::Regular,
+		&common_nonce,
+		context.tau_x.as_mut(),
+		tau_one_sum.as_mut(),
+		tau_two_sum.as_mut(),
+		&[commit_sum],
+		2,
+		None,
+	)?;
+
+	let part_data = ret_slate
+		.participant_data
+		.iter_mut()
+		.find(|d| d.public_nonce == pub_nonce)
+		.ok_or(Error::from(ErrorKind::GenericError(
+			"missing local participant data".into(),
+		)))?;
+
+	part_data.tau_x = context.tau_x.clone();
+	part_data.tau_one = context.tau_one.clone();
+	part_data.tau_two = context.tau_two.clone();
+
+	// Don't calculate partial excess signature, wait for tau_x from the receiver
+	// After receiving tau_x, compute the final bulletproof over the shared output
+	//
+	// Then, calculate the partial excess signature, add to receiver's signature,
+	// and finalize the multisig transaction
+
+	// Save the multisig output and context in our DB
+	{
+		let height = w.last_confirmed_height()?;
+		let mut batch = w.batch(keychain_mask)?;
+		let commit = Some(commit_sum.0.to_vec().to_hex());
+		batch.save(OutputData {
+			root_key_id: key_id.clone(),
+			key_id: key_id.clone(),
+			mmr_index: None,
+			n_child: key_id.to_path().last_path_index(),
+			commit,
+			value: slate.amount,
+			status: OutputStatus::Unconfirmed,
+			height: height,
+			lock_height: 0,
+			is_coinbase: false,
+			tx_log_entry: None,
+		})?;
+		batch.save_private_context(slate.id.as_bytes(), &context)?;
+		batch.commit()?;
+	}
+
+	ret_slate.state = SlateState::Multisig3;
 	Ok(ret_slate)
 }
 
@@ -824,6 +983,15 @@ where
 
 		// Now do the actual locking
 		tx_lock_outputs(w, keychain_mask, &sl)?;
+	}
+
+	// finalize multisig bulletproof
+	if sl
+		.participant_data
+		.iter()
+		.fold(false, |t, d| t | d.tau_x.is_some())
+	{
+		selection::finalize_multisig_bulletproof(&mut *w, keychain_mask, &mut sl, &mut context)?;
 	}
 
 	// Add our contribution to the offset
