@@ -20,6 +20,8 @@
 use crate::slate::Slate;
 use crate::slate_versions::v4::{CoinbaseV4, SlateV4};
 use crate::slate_versions::v4_bin::SlateV4Bin;
+use crate::slate_versions::v5::{CoinbaseV5, SlateV5};
+use crate::slate_versions::v5_bin::SlateV5Bin;
 use crate::types::CbData;
 use crate::Error;
 use std::convert::TryFrom;
@@ -30,6 +32,11 @@ pub mod ser;
 pub mod v4;
 #[allow(missing_docs)]
 pub mod v4_bin;
+
+#[allow(missing_docs)]
+pub mod v5;
+#[allow(missing_docs)]
+pub mod v5_bin;
 
 /// The most recent version of the slate
 pub const CURRENT_SLATE_VERSION: u16 = 4;
@@ -42,6 +49,8 @@ pub const GRIN_BLOCK_HEADER_VERSION: u16 = 3;
 pub enum SlateVersion {
 	/// V4 (most current)
 	V4,
+	/// V5 (next version)
+	V5,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -51,6 +60,8 @@ pub enum SlateVersion {
 pub enum VersionedSlate {
 	/// Current (4.0.0 Onwards )
 	V4(SlateV4),
+	/// Next (5.1.0 Onwards)
+	V5(SlateV5),
 }
 
 impl VersionedSlate {
@@ -58,6 +69,7 @@ impl VersionedSlate {
 	pub fn version(&self) -> SlateVersion {
 		match *self {
 			VersionedSlate::V4(_) => SlateVersion::V4,
+			VersionedSlate::V5(_) => SlateVersion::V5,
 		}
 	}
 
@@ -65,6 +77,7 @@ impl VersionedSlate {
 	pub fn into_version(slate: Slate, version: SlateVersion) -> Result<VersionedSlate, Error> {
 		match version {
 			SlateVersion::V4 => Ok(VersionedSlate::V4(slate.into())),
+			SlateVersion::V5 => Ok(VersionedSlate::V5(slate.into())),
 		}
 	}
 }
@@ -73,6 +86,7 @@ impl From<VersionedSlate> for Slate {
 	fn from(slate: VersionedSlate) -> Slate {
 		match slate {
 			VersionedSlate::V4(s) => Slate::from(s),
+			VersionedSlate::V5(s) => Slate::from(s),
 		}
 	}
 }
@@ -84,6 +98,8 @@ impl From<VersionedSlate> for Slate {
 pub enum VersionedBinSlate {
 	/// Version 4, binary
 	V4(SlateV4Bin),
+	/// Version 5, binary
+	V5(SlateV5Bin),
 }
 
 impl TryFrom<VersionedSlate> for VersionedBinSlate {
@@ -91,6 +107,7 @@ impl TryFrom<VersionedSlate> for VersionedBinSlate {
 	fn try_from(slate: VersionedSlate) -> Result<VersionedBinSlate, Error> {
 		match slate {
 			VersionedSlate::V4(s) => Ok(VersionedBinSlate::V4(SlateV4Bin(s))),
+			VersionedSlate::V5(s) => Ok(VersionedBinSlate::V5(SlateV5Bin(s))),
 		}
 	}
 }
@@ -99,6 +116,7 @@ impl From<VersionedBinSlate> for VersionedSlate {
 	fn from(slate: VersionedBinSlate) -> VersionedSlate {
 		match slate {
 			VersionedBinSlate::V4(s) => VersionedSlate::V4(s.0),
+			VersionedBinSlate::V5(s) => VersionedSlate::V5(s.0),
 		}
 	}
 }
@@ -110,6 +128,8 @@ impl From<VersionedBinSlate> for VersionedSlate {
 pub enum VersionedCoinbase {
 	/// Current supported coinbase version.
 	V4(CoinbaseV4),
+	/// Next supported coinbase version.
+	V5(CoinbaseV5),
 }
 
 impl VersionedCoinbase {
@@ -117,6 +137,7 @@ impl VersionedCoinbase {
 	pub fn into_version(cb: CbData, version: SlateVersion) -> VersionedCoinbase {
 		match version {
 			SlateVersion::V4 => VersionedCoinbase::V4(cb.into()),
+			SlateVersion::V5 => VersionedCoinbase::V5(cb.into()),
 		}
 	}
 }
