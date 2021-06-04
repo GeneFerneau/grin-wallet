@@ -211,6 +211,7 @@ pub fn add_output_to_slate<'a, T: ?Sized, C, K>(
 	parent_key_id: &Identifier,
 	is_initiator: bool,
 	use_test_rng: bool,
+	is_multisig: bool,
 ) -> Result<Context, Error>
 where
 	T: WalletBackend<'a, C, K>,
@@ -227,6 +228,7 @@ where
 		parent_key_id.clone(),
 		use_test_rng,
 		is_initiator,
+		is_multisig,
 	)?;
 
 	// fill public keys

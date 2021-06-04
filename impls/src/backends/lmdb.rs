@@ -35,7 +35,8 @@ use crate::libwallet::{
 	TxLogEntry, WalletBackend, WalletInitStatus, WalletOutputBatch,
 };
 use crate::util::secp::constants::SECRET_KEY_SIZE;
-use crate::util::secp::key::SecretKey;
+use crate::util::secp::key::{PublicKey, SecretKey};
+use crate::util::secp::pedersen::Commitment;
 use crate::util::{self, secp, ToHex};
 
 use rand::rngs::mock::StepRng;
@@ -271,6 +272,27 @@ where
 				.to_hex(), // TODO: proper support for different switch commitment schemes
 		))
 		/*}*/
+	}
+
+	/// return the version of the commit for caching
+	fn calc_multisig_commit_for_cache(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+		amount: u64,
+		id: &Identifier,
+		multisig_key: &PublicKey,
+	) -> Result<Option<String>, Error> {
+		let keychain = self.keychain(keychain_mask)?;
+		let secp = keychain.secp();
+		// TODO: proper support for different switch commitment schemes
+		let commit_key = keychain
+			.commit(amount, &id, SwitchCommitmentType::Regular)?
+			.to_pubkey(secp)?;
+		let commit = PublicKey::from_combination(secp, vec![&commit_key, multisig_key])?;
+
+		Ok(Some(
+			Commitment::from_pubkey(secp, &commit)?.0.to_vec().to_hex(),
+		))
 	}
 
 	/// Set parent path by account name

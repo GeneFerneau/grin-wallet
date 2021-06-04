@@ -26,7 +26,7 @@ use crate::grin_keychain::{Identifier, Keychain};
 use crate::grin_util::secp::key::SecretKey;
 use crate::grin_util::secp::pedersen;
 use crate::internal::keys;
-use crate::slate::Slate;
+use crate::slate::{ParticipantData, Slate};
 use crate::types::*;
 use crate::util::OnionV3Address;
 use std::collections::HashMap;
@@ -244,6 +244,7 @@ pub fn build_recipient_output<'a, T: ?Sized, C, K>(
 	parent_key_id: Identifier,
 	use_test_rng: bool,
 	is_initiator: bool,
+	is_multisig: bool,
 ) -> Result<(Identifier, Context, TxLogEntry), Error>
 where
 	T: WalletBackend<'a, C, K>,
@@ -270,7 +271,23 @@ where
 	context.add_output(&key_id, &None, amount);
 	context.amount = amount;
 	context.fee = slate.fee_fields.as_opt();
-	let commit = wallet.calc_commit_for_cache(keychain_mask, amount, &key_id_inner)?;
+	let commit = if is_multisig {
+		let (_, public_nonce) = context.get_public_keys(keychain.secp());
+		let data: Vec<&ParticipantData> = slate
+			.participant_data
+			.iter()
+			.filter(|d| d.public_nonce != public_nonce)
+			.collect();
+		assert_eq!(data.len(), 1);
+		wallet.calc_multisig_commit_for_cache(
+			keychain_mask,
+			amount,
+			&key_id_inner,
+			&data[0].public_nonce,
+		)?
+	} else {
+		wallet.calc_commit_for_cache(keychain_mask, amount, &key_id_inner)?
+	};
 	let mut batch = wallet.batch(keychain_mask)?;
 	let log_id = batch.next_tx_log_id(&parent_key_id)?;
 	let mut t = TxLogEntry::new(parent_key_id.clone(), TxLogEntryType::TxReceived, log_id);

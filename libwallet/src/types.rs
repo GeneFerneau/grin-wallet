@@ -173,6 +173,15 @@ where
 		id: &Identifier,
 	) -> Result<Option<String>, Error>;
 
+	/// return the commit for caching if allowed, none otherwise
+	fn calc_multisig_commit_for_cache(
+		&mut self,
+		keychain_mask: Option<&SecretKey>,
+		amount: u64,
+		id: &Identifier,
+		multisig_key: &PublicKey,
+	) -> Result<Option<String>, Error>;
+
 	/// Set parent key id by stored account name
 	fn set_parent_key_id_by_name(&mut self, label: &str) -> Result<(), Error>;
 

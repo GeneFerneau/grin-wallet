@@ -104,6 +104,7 @@ where
 		&parent_key_id,
 		false,
 		use_test_rng,
+		false,
 	)?;
 
 	// Add our contribution to the offset

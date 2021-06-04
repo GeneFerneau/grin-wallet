@@ -592,6 +592,7 @@ where
 		&parent_key_id,
 		true,
 		use_test_rng,
+		false,
 	)?;
 
 	if let Some(v) = args.target_slate_version {
