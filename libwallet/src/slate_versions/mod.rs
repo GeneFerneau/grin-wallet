@@ -39,7 +39,7 @@ pub mod v5;
 pub mod v5_bin;
 
 /// The most recent version of the slate
-pub const CURRENT_SLATE_VERSION: u16 = 4;
+pub const CURRENT_SLATE_VERSION: u16 = 5;
 
 /// The grin block header this slate is intended to be compatible with
 pub const GRIN_BLOCK_HEADER_VERSION: u16 = 3;
@@ -47,10 +47,10 @@ pub const GRIN_BLOCK_HEADER_VERSION: u16 = 3;
 /// Existing versions of the slate
 #[derive(EnumIter, Serialize, Deserialize, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum SlateVersion {
-	/// V4 (most current)
-	V4,
 	/// V5 (next version)
 	V5,
+	/// V4 (most current)
+	V4,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -58,10 +58,10 @@ pub enum SlateVersion {
 /// Versions are ordered newest to oldest so serde attempts to
 /// deserialize newer versions first, then falls back to older versions.
 pub enum VersionedSlate {
-	/// Current (4.0.0 Onwards )
-	V4(SlateV4),
 	/// Next (5.1.0 Onwards)
 	V5(SlateV5),
+	/// Current (4.0.0 Onwards )
+	V4(SlateV4),
 }
 
 impl VersionedSlate {
@@ -96,10 +96,10 @@ impl From<VersionedSlate> for Slate {
 /// Binary versions, can only be parsed 1:1 into the appropriate
 /// version, and VersionedSlate can up/downgrade from there
 pub enum VersionedBinSlate {
-	/// Version 4, binary
-	V4(SlateV4Bin),
 	/// Version 5, binary
 	V5(SlateV5Bin),
+	/// Version 4, binary
+	V4(SlateV4Bin),
 }
 
 impl TryFrom<VersionedSlate> for VersionedBinSlate {
@@ -126,10 +126,10 @@ impl From<VersionedBinSlate> for VersionedSlate {
 /// Versions are ordered newest to oldest so serde attempts to
 /// deserialize newer versions first, then falls back to older versions.
 pub enum VersionedCoinbase {
-	/// Current supported coinbase version.
-	V4(CoinbaseV4),
 	/// Next supported coinbase version.
 	V5(CoinbaseV5),
+	/// Current supported coinbase version.
+	V4(CoinbaseV4),
 }
 
 impl VersionedCoinbase {

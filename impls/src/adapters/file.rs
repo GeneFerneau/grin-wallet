@@ -36,8 +36,12 @@ impl SlatePutter for PathToSlate {
 			raw_slate.sync_all()?;
 		}*/
 		let mut pub_tx = File::create(&self.0)?;
+		let slate_version = match slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		// TODO:
-		let out_slate = VersionedSlate::into_version(slate.clone(), SlateVersion::V4)?;
+		let out_slate = VersionedSlate::into_version(slate.clone(), slate_version)?;
 		if as_bin {
 			let bin_slate =
 				VersionedBinSlate::try_from(out_slate).map_err(|_| ErrorKind::SlateSer)?;

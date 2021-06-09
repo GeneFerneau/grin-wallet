@@ -346,7 +346,6 @@ where
 		parent_key_id.clone(),
 		use_test_rng,
 		is_initiator,
-		true, /* is_multisig */
 	)?;
 
 	context.sec_atomic = atomic_secret;

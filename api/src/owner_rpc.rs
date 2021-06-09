@@ -406,7 +406,7 @@ pub trait OwnerRpc {
 						}
 					],
 					"sta": "S1",
-					"ver": "4:2"
+					"ver": "5:2"
 				}
 			}
 		}
@@ -453,7 +453,7 @@ pub trait OwnerRpc {
 						}
 					],
 					"sta": "I1",
-					"ver": "4:2"
+					"ver": "5:2"
 				}
 			}
 		}
@@ -490,7 +490,7 @@ pub trait OwnerRpc {
 						}
 					],
 					"sta": "I1",
-					"ver": "4:2"
+					"ver": "5:2"
 				},
 				"args": {
 					"src_acct_name": null,
@@ -536,7 +536,7 @@ pub trait OwnerRpc {
 					}
 				],
 				"sta": "I2",
-				"ver": "4:2"
+				"ver": "5:2"
 			}
 		}
 	}
@@ -576,7 +576,7 @@ pub trait OwnerRpc {
 		"params": {
 			"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
 			"slate": {
-				"ver": "4:2",
+				"ver": "5:2",
 				"id": "0436430c-2b02-624c-2032-570501212b00",
 				"sta": "S1",
 				"off": "d202964900000000d302964900000000d402964900000000d502964900000000",
@@ -653,7 +653,7 @@ pub trait OwnerRpc {
 						}
 					],
 					"sta": "A1",
-					"ver": "4:2"
+					"ver": "5:2"
 				}
 			}
 		}
@@ -677,7 +677,7 @@ pub trait OwnerRpc {
 			"params": {
 				"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
 				"slate": {
-					"ver": "4:2",
+					"ver": "5:3",
 					"id": "0436430c-2b02-624c-2032-570501212b00",
 					"sta": "A2",
 					"off": "a5a632f26f27a9b71e98c1c8b8098bb41204ffcfd206d995f9c16d10764ad95a",
@@ -746,7 +746,7 @@ pub trait OwnerRpc {
 						}
 					],
 					"sta": "A3",
-					"ver": "4:2"
+					"ver": "5:3"
 				}
 			}
 		}
@@ -775,7 +775,7 @@ pub trait OwnerRpc {
 			"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
 			"slate":
 			{
-				"ver": "4:2",
+				"ver": "5:2",
 				"id": "0436430c-2b02-624c-2032-570501212b00",
 				"sta": "S2",
 				"off": "6c6a69136154775488782121887bb3c32787a8320551fdb9732ec2d333fe54ee",
@@ -837,7 +837,7 @@ pub trait OwnerRpc {
 					}
 				],
 				"sta": "S3",
-				"ver": "4:2"
+				"ver": "5:2"
 			}
 		}
 	}
@@ -861,7 +861,7 @@ pub trait OwnerRpc {
 		"params": {
 			"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
 			"slate": {
-				"ver": "4:2",
+				"ver": "5:2",
 				"id": "0436430c-2b02-624c-2032-570501212b00",
 				"sta": "S3",
 				"off": "750dbf4fd43b7f4cfd68d2698a522f3ff6e6a00ad9895b33f1ec46493b837b49",
@@ -989,7 +989,7 @@ pub trait OwnerRpc {
 				"id": "0436430c-2b02-624c-2032-570501212b00",
 				"sigs": [],
 				"sta": "S3",
-				"ver": "4:3"
+				"ver": "5:3"
 			}
 		}
 	}
@@ -1628,7 +1628,7 @@ pub trait OwnerRpc {
 			"sender_index": 0,
 			"recipients": [],
 			"slate": {
-				"ver": "4:2",
+				"ver": "5:2",
 				"id": "0436430c-2b02-624c-2032-570501212b00",
 				"sta": "S1",
 				"off": "d202964900000000d302964900000000d402964900000000d502964900000000",
@@ -1651,7 +1651,7 @@ pub trait OwnerRpc {
 		"id": 1,
 		"jsonrpc": "2.0",
 		"result": {
-			"Ok": "BEGINSLATEPACK. xyfzdULuUuM5r3R kS68aywyCuYssPs Jf1JbvnBcK6NDDo ajiGAgh2SPx4t49 xtKuJE3BZCcSEue ksecMmbSoV2DQbX gGcmJniP9UadcmR N1KSc5FBhwAaUjy LXeYDP7EV7Cmsj4 pLaJdZTJTQbccUH 2zG8QTgoEiEWP5V T6rKst1TibmDAFm RRVHYDtskdYJb5G krqfpgN7RjvPfpm Z5ZFyz6ipAt5q9T 2HCjrTxkHdVi9js 22tr2Lx6iXT5vm8 JL6HhjwyFrSaEmN AjsBE8jgiaAABA6 GGZKwcXeXToMfRt nL9DeX1. ENDSLATEPACK."
+			"Ok": "BEGINSLATEPACK. 3mz5n34kmt5bXXV ubrnwhufnUc3MHD Jp7ZvuMJTTD96ru 7R1T3SpbmENmkvt 1Tazq77CBGmyNAY RxLCCi7TtGigAtY 7CbhdhNhLpNFK2J 82WoGtDPGPc7ciq TkEiRoopr1hVh1p JKqy9mwHb3HHcHR Znz1QDxBbULjmfU rcQcbuXkGzFEg4i m5xGnvYPt8HMTm8 d3kSe7hSX5929N3 xcdAFBVMYm5GUgd PWvW7QUP5frB4aP zazzB7P1w89x7Jg GmLiX3wBzt4bqJD 83sqrJR5BW8x4NB rvRqsXRDScQTqZd CacQSv7y. ENDSLATEPACK."
 		}
 	}
 	# "#
@@ -1960,7 +1960,10 @@ where
 	fn init_send_tx(&self, token: Token, args: InitTxArgs) -> Result<VersionedSlate, ErrorKind> {
 		let slate = Owner::init_send_tx(self, (&token.keychain_mask).as_ref(), args)
 			.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -1971,7 +1974,10 @@ where
 	) -> Result<VersionedSlate, ErrorKind> {
 		let slate = Owner::issue_invoice_tx(self, (&token.keychain_mask).as_ref(), args)
 			.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -1988,7 +1994,10 @@ where
 			args,
 		)
 		.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match out_slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -2014,7 +2023,10 @@ where
 	) -> Result<VersionedSlate, ErrorKind> {
 		let out_slate = Owner::init_atomic_swap(self, (&token.keychain_mask).as_ref(), args)
 			.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match out_slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -2028,7 +2040,10 @@ where
 		let out_slate =
 			Owner::countersign_atomic_swap(self, &slate, (&token.keychain_mask).as_ref(), r_addr)
 				.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match out_slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -2043,7 +2058,10 @@ where
 			&Slate::from(in_slate),
 		)
 		.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match out_slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
 	}
 
@@ -2081,7 +2099,10 @@ where
 		.map_err(|e| e.kind())?;
 		match out_slate {
 			Some(s) => {
-				let version = SlateVersion::V4;
+				let version = match s.version_info.version {
+					4 => SlateVersion::V4,
+					5 | _ => SlateVersion::V5,
+				};
 				Ok(Some(
 					VersionedSlate::into_version(s, version).map_err(|e| e.kind())?,
 				))
@@ -2286,7 +2307,10 @@ where
 			secret_indices,
 		)
 		.map_err(|e| e.kind())?;
-		let version = SlateVersion::V4;
+		let version = match slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
 		Ok(VersionedSlate::into_version(slate, version).map_err(|e| e.kind())?)
 	}
 

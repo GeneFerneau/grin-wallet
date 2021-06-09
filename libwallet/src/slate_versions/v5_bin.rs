@@ -459,7 +459,7 @@ impl serde::Serialize for SlateV5Bin {
 		S: serde::Serializer,
 	{
 		let mut vec = vec![];
-		grin_ser::serialize(&mut vec, grin_ser::ProtocolVersion(4), self)
+		grin_ser::serialize(&mut vec, grin_ser::ProtocolVersion(5), self)
 			.map_err(|err| serde::ser::Error::custom(err.to_string()))?;
 		serializer.serialize_bytes(&vec)
 	}

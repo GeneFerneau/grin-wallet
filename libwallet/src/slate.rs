@@ -958,8 +958,16 @@ impl Serialize for Slate {
 	where
 		S: Serializer,
 	{
-		let v5 = SlateV5::from(self);
-		v5.serialize(serializer)
+		match self.version_info.version {
+			4 => {
+				let v4 = SlateV4::from(self);
+				v4.serialize(serializer)
+			}
+			5 | _ => {
+				let v5 = SlateV5::from(self);
+				v5.serialize(serializer)
+			}
+		}
 	}
 }
 // Current slate version to versioned conversions
