@@ -94,7 +94,11 @@ impl<'a> Slatepacker<'a> {
 
 	/// Create slatepack from slate and args
 	pub fn create_slatepack(&self, slate: &Slate) -> Result<Slatepack, Error> {
-		let out_slate = VersionedSlate::into_version(slate.clone(), SlateVersion::V4)?;
+		let slate_version = match slate.version_info.version {
+			4 => SlateVersion::V4,
+			5 | _ => SlateVersion::V5,
+		};
+		let out_slate = VersionedSlate::into_version(slate.clone(), slate_version)?;
 		let bin_slate =
 			VersionedBinSlate::try_from(out_slate).map_err(|_| ErrorKind::SlatepackSer)?;
 		let mut slatepack = Slatepack::default();

@@ -145,6 +145,10 @@ impl HttpSlateSender {
 			return Err(ErrorKind::ClientCallback(report).into());
 		}
 
+		if supported_slate_versions.contains(&"V5".to_owned()) {
+			return Ok(SlateVersion::V5);
+		}
+
 		if supported_slate_versions.contains(&"V4".to_owned()) {
 			return Ok(SlateVersion::V4);
 		}

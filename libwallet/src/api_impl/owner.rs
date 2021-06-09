@@ -963,10 +963,6 @@ where
 		args.ttl_blocks,
 	)?;
 
-	if let Some(v) = args.target_slate_version {
-		slate.version_info.version = v;
-	};
-
 	let height = w.w2n_client().get_chain_tip()?.0;
 	let keychain = w.keychain(keychain_mask)?;
 

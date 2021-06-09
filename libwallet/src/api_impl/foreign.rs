@@ -183,7 +183,7 @@ where
 	let keychain = w.keychain(keychain_mask)?;
 
 	let is_height_lock = ret_slate.kernel_features == 2;
-	// derive atomic nonce from the slate's `atomic_id`
+	// derive atomic secret from the slate's `atomic_id`
 	let (atomic_id, atomic_secret) = {
 		let atomic_id = w.next_atomic_id(keychain_mask)?;
 		let atomic =
@@ -192,7 +192,7 @@ where
 		let pub_atomic = PublicKey::from_secret_key(keychain.secp(), &atomic)?;
 
 		debug!(
-			"Your public atomic nonce: {}",
+			"Your atomic public key: {}",
 			pub_atomic
 				.serialize_vec(keychain.secp(), true)
 				.as_ref()
