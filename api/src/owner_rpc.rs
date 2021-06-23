@@ -73,7 +73,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false, false);
+	# , 4, false, false, false, false, false, false);
 	```
 	*/
 	fn accounts(&self, token: Token) -> Result<Vec<AcctPathMapping>, ErrorKind>;
@@ -106,7 +106,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false, false);
+	# , 4, false, false, false, false, false, false);
 	```
 	 */
 	fn create_account_path(&self, token: Token, label: &String) -> Result<Identifier, ErrorKind>;
@@ -139,7 +139,7 @@ pub trait OwnerRpc {
 		"id": 1
 	}
 	# "#
-	# , 4, false, false, false, false, false);
+	# , 4, false, false, false, false, false, false);
 	```
 	 */
 	fn set_active_account(&self, token: Token, label: &String) -> Result<(), ErrorKind>;
@@ -210,7 +210,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 2, false, false, false, false, false);
+	# , 2, false, false, false, false, false, false);
 	```
 	*/
 	fn retrieve_outputs(
@@ -295,7 +295,7 @@ pub trait OwnerRpc {
 	  }
 	}
 	# "#
-	# , 2, false, false, false, false, false);
+	# , 2, false, false, false, false, false, false);
 	```
 	*/
 
@@ -347,7 +347,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 4, false, false, false, false, false);
+	# , 4, false, false, false, false, false, false);
 	```
 	 */
 
@@ -411,7 +411,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 4, false, false, false, false, false);
+		# , 4, false, false, false, false, false, false);
 	```
 	*/
 
@@ -458,7 +458,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 4, false, false, false, false, false);
+		# , 4, false, false, false, false, false, false);
 	```
 	*/
 
@@ -541,7 +541,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 4, false, false, false, false, false);
+	# , 4, false, false, false, false, false, false);
 	```
 	*/
 
@@ -555,7 +555,66 @@ pub trait OwnerRpc {
 	/**
 	Networked version of [Owner::process_multisig_tx](struct.Owner.html#method.process_multisig_tx).
 
-	FIXME: add RPC doc-test
+	# Json rpc example
+
+	```
+	# grin_wallet_api::doctest_helper_json_rpc_owner_assert_response!(
+	# r#"
+	{
+		"jsonrpc": "2.0",
+		"method": "process_multisig_tx",
+		"params": {
+			"token": "d202964900000000d302964900000000d402964900000000d502964900000000",
+			"slate": {
+				"amt": "6000000000",
+				"id": "0436430c-2b02-624c-2032-570501212b00",
+				"off": "d202964900000000d302964900000000d402964900000000d502964900000000",
+				"sigs": [
+					{
+						"nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+						"xs": "028e95921cc0d5be5922362265d352c9bdabe51a9e1502a3f0d4a10387f1893f40",
+						"part": "8f07ddd5e9f5179cff19486034181ed76505baaad53e5d994064127b56c5841be7bf31d80494f5e4a3d656649b1610c61a268f9cafcfc604b5d9f25efb2aa3c5",
+						"part_commit": "091c34a190f7352149a343e3652d3f9e37972d822440e0d8ee03c658f003e178b4",
+						"tau_one": "02799bbf36460d56c1999bedd02acfefde8fd608f8b9ecc9bf02559a6d203cf308",
+						"tau_two": "020052d5842dc9a75859384b5136573545dc60553d766cad01f0665dbca937fb9a"
+					}
+				],
+				"sta": "M2",
+				"ver": "5:2"
+			}
+		},
+		"id": 1
+	}
+	# "#
+	# ,
+	# r#"
+	{
+		"id": 1,
+		"jsonrpc": "2.0",
+		"result": {
+			"Ok": {
+				  "amt": "6000000000",
+				  "id": "0436430c-2b02-624c-2032-570501212b00",
+				  "off": "d202964900000000d302964900000000d402964900000000d502964900000000",
+				  "sigs": [
+					{
+					  "nonce": "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f",
+					  "part": "8f07ddd5e9f5179cff19486034181ed76505baaad53e5d994064127b56c5841be7bf31d80494f5e4a3d656649b1610c61a268f9cafcfc604b5d9f25efb2aa3c5",
+					  "part_commit": "091c34a190f7352149a343e3652d3f9e37972d822440e0d8ee03c658f003e178b4",
+					  "tau_one": "02b0c7236422e39ab3963bcacdb9603a569084c04e2fb9f55c039fed32b9c7e787",
+					  "tau_two": "03654174fc7e635883c3b474e3ca21aa61f999f4302342e94cecdf5fbbe2ef3eb0",
+					  "tau_x": "b8c94b10ffb7614e2836ac1db242de1d9c9f4039d0f26d1bba1149b9dffbdc39",
+					  "xs": "028e95921cc0d5be5922362265d352c9bdabe51a9e1502a3f0d4a10387f1893f40"
+					}
+				  ],
+				  "sta": "M3",
+				  "ver": "5:2"
+			}
+		}
+	}
+	# "#
+	# , 5, true, true, false, false, false, true);
+	```
 	 */
 	fn process_multisig_tx(
 		&self,
@@ -602,7 +661,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5 ,true, false, false, false, false);
+	# , 5 ,true, false, false, false, false, false);
 
 	```
 	 */
@@ -658,7 +717,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 4, false, false, false, false, false);
+		# , 4, false, false, false, false, false, false);
 	```
 	*/
 	fn init_atomic_swap(&self, token: Token, args: InitTxArgs)
@@ -751,7 +810,7 @@ pub trait OwnerRpc {
 			}
 		}
 		# "#
-		# , 5 , true, false, false, false, true);
+		# , 5 , true, false, false, false, true, false);
 		```
 	*/
 	fn countersign_atomic_swap(
@@ -842,7 +901,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false, false);
+	# , 5, true, true, false, false, false, false);
 	```
 	 */
 	fn finalize_tx(&self, token: Token, slate: VersionedSlate)
@@ -911,7 +970,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, false, false);
+	# , 5, true, true, true, false, false, false);
 	```
 	 */
 
@@ -945,7 +1004,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false, false);
+	# , 5, true, true, false, false, false, false);
 	```
 	 */
 	fn cancel_tx(
@@ -994,7 +1053,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, false, false, false);
+	# , 5, true, true, false, false, false, false);
 	```
 	 */
 	fn get_stored_tx(
@@ -1032,7 +1091,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 1, false, false, false, false, false);
+	# , 1, false, false, false, false, false, false);
 	```
 	 */
 	fn scan(
@@ -1071,7 +1130,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false, false);
+	# , 5, false, false, false, false, false, false);
 	```
 	 */
 	fn node_height(&self, token: Token) -> Result<NodeHeightResult, ErrorKind>;
@@ -1154,7 +1213,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false, false);
+	# , 5, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1184,7 +1243,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false, false);
+	# , 5, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1250,7 +1309,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, false, false, false, false, false);
+	# , 5, false, false, false, false, false, false);
 	```
 	*/
 	fn create_config(
@@ -1288,7 +1347,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1325,7 +1384,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1355,7 +1414,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1386,7 +1445,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1418,7 +1477,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 	fn change_password(
@@ -1452,7 +1511,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 	fn delete_wallet(&self, name: Option<String>) -> Result<(), ErrorKind>;
@@ -1482,7 +1541,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1510,7 +1569,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 	fn stop_updater(&self) -> Result<(), ErrorKind>;
@@ -1539,7 +1598,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1570,7 +1629,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1605,7 +1664,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1655,7 +1714,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1710,7 +1769,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1752,7 +1811,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 
@@ -1797,7 +1856,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, true, false);
+	# , 5, true, true, true, true, false, false);
 	```
 	*/
 
@@ -1844,7 +1903,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 5, true, true, true, true, false);
+	# , 5, true, true, true, true, false, false);
 	```
 	*/
 
@@ -1882,7 +1941,7 @@ pub trait OwnerRpc {
 		}
 	}
 	# "#
-	# , 0, false, false, false, false, false);
+	# , 0, false, false, false, false, false, false);
 	```
 	*/
 	fn set_tor_config(&self, tor_config: Option<TorConfig>) -> Result<(), ErrorKind>;
@@ -2014,7 +2073,7 @@ where
 		.map_err(|e| e.kind())?;
 		let version = SlateVersion::V5;
 		Ok(VersionedSlate::into_version(out_slate, version).map_err(|e| e.kind())?)
-    }
+	}
 
 	fn init_atomic_swap(
 		&self,
@@ -2371,6 +2430,7 @@ pub fn run_doctest_owner(
 	finalize_tx: bool,
 	payment_proof: bool,
 	countersign_atomic: bool,
+	is_multisig: bool,
 ) -> Result<Option<serde_json::Value>, String> {
 	use easy_jsonrpc_mw::Handler;
 	use grin_wallet_impls::test_framework::{self, LocalWalletClient, WalletProxy};
@@ -2514,6 +2574,7 @@ pub fn run_doctest_owner(
 			num_change_outputs: 1,
 			selection_strategy_is_use_all: true,
 			payment_proof_recipient_address: proof_address,
+			is_multisig: Some(is_multisig),
 			..Default::default()
 		};
 		let mut slate = if countersign_atomic {
@@ -2559,6 +2620,16 @@ pub fn run_doctest_owner(
 					.unwrap();
 				w2.close().unwrap();
 				sl
+			} else if is_multisig {
+				let sl =
+					api_impl::owner::process_multisig_tx(&mut **w, (&mask1).as_ref(), &slate, true)
+						.unwrap();
+				let mut w_lock = wallet2.lock();
+				let w2 = w_lock.lc_provider().unwrap().wallet_inst().unwrap();
+				let sl = api_impl::foreign::finalize_tx(&mut **w2, (&mask2).as_ref(), &sl, false)
+					.unwrap();
+				w2.close().unwrap();
+				sl
 			} else {
 				api_impl::owner::finalize_tx(&mut **w, (&mask1).as_ref(), &slate).unwrap()
 			};
@@ -2594,7 +2665,7 @@ pub fn run_doctest_owner(
 #[doc(hidden)]
 #[macro_export]
 macro_rules! doctest_helper_json_rpc_owner_assert_response {
-	($request:expr, $expected_response:expr, $blocks_to_mine:expr, $perform_tx:expr, $lock_tx:expr, $finalize_tx:expr, $payment_proof:expr, $countersign_atomic:expr) => {
+	($request:expr, $expected_response:expr, $blocks_to_mine:expr, $perform_tx:expr, $lock_tx:expr, $finalize_tx:expr, $payment_proof:expr, $countersign_atomic:expr, $is_multisig:expr) => {
 		// create temporary wallet, run jsonrpc request on owner api of wallet, delete wallet, return
 		// json response.
 		// In order to prevent leaking tempdirs, This function should not panic.
@@ -2628,6 +2699,7 @@ macro_rules! doctest_helper_json_rpc_owner_assert_response {
 				$finalize_tx,
 				$payment_proof,
 				$countersign_atomic,
+				$is_multisig,
 			)
 			.unwrap()
 			.unwrap();
