@@ -954,6 +954,13 @@ where
 		None => w.parent_key_id(),
 	};
 
+	let multisig_path_str = args
+		.multisig_path
+		.ok_or(Error::from(ErrorKind::GenericError(
+			"missing BIP32 multisig path".into(),
+		)))?;
+	let multisig_id = Identifier::from_bip_32_string(&multisig_path_str)?;
+
 	let mut slate = tx::new_tx_slate(
 		&mut *w,
 		args.amount,
@@ -963,8 +970,17 @@ where
 		args.ttl_blocks,
 	)?;
 
+	slate.multisig_key_id = Some(multisig_id.clone());
+
 	let height = w.w2n_client().get_chain_tip()?.0;
 	let keychain = w.keychain(keychain_mask)?;
+
+	let output = w
+		.iter()
+		.find(|d| d.key_id == multisig_id)
+		.ok_or(Error::from(ErrorKind::GenericError(
+			"missing multisig output".into(),
+		)))?;
 
 	let context = if args.late_lock.unwrap_or(false) {
 		// use late_lock context for initial height_lock tx,
@@ -972,6 +988,7 @@ where
 		let mut context = Context::new(keychain.secp(), &parent_key_id, use_test_rng, true);
 		context.amount = args.amount;
 		context.fee = slate.fee_fields.as_opt();
+		context.input_ids = vec![(output.key_id, output.mmr_index, output.value)];
 
 		slate.fill_round_1(&keychain, &mut context)?;
 
@@ -1124,6 +1141,7 @@ where
 			args.selection_strategy_is_use_all,
 			Some(context.fee.map(|f| f.fee()).unwrap_or(0)),
 			parent_key_id.clone(),
+			None,
 			false,
 			true,
 		)?;

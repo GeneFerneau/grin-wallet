@@ -280,6 +280,10 @@ subcommands:
   - send_atomic:
       about: Builds an atomic swap main transaction to send coins and sends to the recipient via the Slatepack workflow
       args:
+        - multisig_path:
+            help: BIP32 path of the multisig output to spend in the atomic swap
+            long: multisig_path
+            takes_value: true
         - refund:
             help: Create an atomic swap refund transaction
             short: r

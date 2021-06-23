@@ -222,6 +222,7 @@ pub trait ForeignRpc {
 				"ver": "5:2"
 			},
 			null,
+			null,
 			null
 		]
 	}

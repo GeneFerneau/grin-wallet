@@ -25,7 +25,8 @@ use crate::grin_core::core::transaction::{
 use crate::grin_core::libtx::{aggsig, build, proof::ProofBuild, tx_fee};
 use crate::grin_core::map_vec;
 use crate::grin_keychain::{
-	BlindSum, BlindingFactor, ExtKeychain, ExtKeychainPath, Identifier, Keychain, SwitchCommitmentType,
+	BlindSum, BlindingFactor, ExtKeychain, ExtKeychainPath, Identifier, Keychain,
+	SwitchCommitmentType,
 };
 use crate::grin_util::secp::key::{PublicKey, SecretKey};
 use crate::grin_util::secp::pedersen::Commitment;
@@ -144,6 +145,8 @@ pub struct Slate {
 	pub payment_proof: Option<PaymentInfo>,
 	/// Kernel features arguments
 	pub kernel_features_args: Option<KernelFeaturesArgs>,
+	/// Multisig key id for shared output
+	pub multisig_key_id: Option<Identifier>,
 }
 
 impl fmt::Display for Slate {
@@ -342,6 +345,7 @@ impl Slate {
 			},
 			payment_proof: None,
 			kernel_features_args: None,
+			multisig_key_id: None,
 		}
 	}
 
@@ -989,6 +993,7 @@ impl From<Slate> for SlateV4 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id: _,
 		} = slate.clone();
 		let participant_data = map_vec!(participant_data, |data| ParticipantDataV4::from(data));
 		let ver = VersionCompatInfoV4::from(&version_info);
@@ -1036,6 +1041,7 @@ impl From<Slate> for SlateV5 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id,
 		} = slate.clone();
 		let participant_data = map_vec!(participant_data, |data| ParticipantDataV5::from(data));
 		let ver = VersionCompatInfoV5::from(&version_info);
@@ -1062,6 +1068,7 @@ impl From<Slate> for SlateV5 {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			multisig_key_id,
 		}
 	}
 }
@@ -1082,6 +1089,7 @@ impl From<&Slate> for SlateV4 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id: _,
 		} = slate;
 		let num_parts = *num_parts;
 		let id = *id;
@@ -1135,6 +1143,7 @@ impl From<&Slate> for SlateV5 {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id,
 		} = slate;
 		let num_parts = *num_parts;
 		let id = *id;
@@ -1154,6 +1163,7 @@ impl From<&Slate> for SlateV5 {
 			Some(a) => Some(KernelFeaturesArgsV5::from(a)),
 			None => None,
 		};
+		let multisig_key_id = multisig_key_id.clone();
 		SlateV5 {
 			num_parts,
 			id,
@@ -1168,6 +1178,7 @@ impl From<&Slate> for SlateV5 {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			multisig_key_id,
 		}
 	}
 }
@@ -1458,6 +1469,7 @@ impl From<SlateV4> for Slate {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id: None,
 		}
 	}
 }
@@ -1479,6 +1491,7 @@ impl From<SlateV5> for Slate {
 			ver,
 			proof: payment_proof,
 			feat_args,
+			multisig_key_id,
 		} = slate.clone();
 		let participant_data = map_vec!(participant_data, |data| ParticipantData::from(data));
 		let version_info = VersionCompatInfo::from(&ver);
@@ -1505,6 +1518,7 @@ impl From<SlateV5> for Slate {
 			version_info,
 			payment_proof,
 			kernel_features_args,
+			multisig_key_id,
 		}
 	}
 }

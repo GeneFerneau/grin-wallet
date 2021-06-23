@@ -521,6 +521,8 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 	let is_multisig = Some(args.is_present("multisig"));
 	let derive_path = parse_u32_or_none(args.value_of("derive_path"));
 
+	let multisig_path = parse_optional(args, "multisig_path")?;
+
 	Ok(command::SendArgs {
 		amount: amount,
 		minimum_confirmations: min_c,
@@ -538,6 +540,7 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 		skip_tor: args.is_present("manual"),
 		is_multisig,
 		derive_path,
+		multisig_path,
 	})
 }
 

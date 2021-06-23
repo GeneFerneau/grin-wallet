@@ -50,6 +50,7 @@ pub fn build_send_tx<'a, T: ?Sized, C, K>(
 	selection_strategy_is_use_all: bool,
 	fixed_fee: Option<u64>,
 	parent_key_id: Identifier,
+	multisig_key_id: Option<&Identifier>,
 	use_test_nonce: bool,
 	is_initiator: bool,
 ) -> Result<Context, Error>
@@ -68,6 +69,7 @@ where
 		change_outputs,
 		selection_strategy_is_use_all,
 		&parent_key_id,
+		multisig_key_id,
 		false,
 	)?;
 
@@ -390,6 +392,7 @@ pub fn select_send_tx<'a, T: ?Sized, C, K, B>(
 	change_outputs: usize,
 	selection_strategy_is_use_all: bool,
 	parent_key_id: &Identifier,
+	multisig_key_id: Option<&Identifier>,
 	include_inputs_in_sum: bool,
 ) -> Result<
 	(
@@ -415,6 +418,7 @@ where
 		change_outputs,
 		selection_strategy_is_use_all,
 		&parent_key_id,
+		multisig_key_id,
 	)?;
 
 	// build transaction skeleton with inputs and change
@@ -441,6 +445,7 @@ pub fn select_coins_and_fee<'a, T: ?Sized, C, K>(
 	change_outputs: usize,
 	selection_strategy_is_use_all: bool,
 	parent_key_id: &Identifier,
+	multisig_key_id: Option<&Identifier>,
 ) -> Result<
 	(
 		Vec<OutputData>,
@@ -464,6 +469,7 @@ where
 		max_outputs,
 		selection_strategy_is_use_all,
 		parent_key_id,
+		multisig_key_id,
 	);
 
 	// sender is responsible for setting the fee on the partial tx
@@ -526,6 +532,7 @@ where
 				max_outputs,
 				selection_strategy_is_use_all,
 				parent_key_id,
+				multisig_key_id,
 			)
 			.1;
 			fee = tx_fee(coins.len(), num_outputs, 1);
@@ -625,6 +632,7 @@ pub fn select_coins<'a, T: ?Sized, C, K>(
 	max_outputs: usize,
 	select_all: bool,
 	parent_key_id: &Identifier,
+	multisig_key_id: Option<&Identifier>,
 ) -> (usize, Vec<OutputData>)
 //    max_outputs_available, Outputs
 where
@@ -633,10 +641,11 @@ where
 	K: Keychain + 'a,
 {
 	// first find all eligible outputs based on number of confirmations
+	let key_id = multisig_key_id.unwrap_or(parent_key_id);
 	let mut eligible = wallet
 		.iter()
 		.filter(|out| {
-			out.root_key_id == *parent_key_id
+			out.root_key_id == *key_id
 				&& out.eligible_to_spend(current_height, minimum_confirmations)
 		})
 		.collect::<Vec<OutputData>>();
