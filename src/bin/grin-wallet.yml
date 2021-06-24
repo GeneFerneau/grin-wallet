@@ -111,7 +111,7 @@ subcommands:
             help: EXPERIMENTAL - Do not lock the coins immediately, instead only lock them during finalization.
             short: l
             long: late-lock
-        - mutlisig:
+        - multisig:
             help: EXPERIMENTAL - Create a multisig output with shared ownership.
             long: multisig
         - change_outputs:

@@ -469,7 +469,7 @@ pub fn parse_send_args(args: &ArgMatches) -> Result<command::SendArgs, ParseErro
 	// estimate_selection_strategies
 	let estimate_selection_strategies = args.is_present("estimate_selection_strategies");
 
-	let late_lock = args.is_present("late_lock");
+	let late_lock = args.is_present("late_lock") || args.is_present("refund");
 
 	// dest
 	let dest = match args.value_of("dest") {

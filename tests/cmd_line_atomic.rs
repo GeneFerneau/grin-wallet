@@ -166,6 +166,100 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	let arg_vec = vec!["grin-wallet", "-p", "password1", "-a", "mining", "info"];
 	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
 
+	// create multisig output funding transaction
+	let arg_vec = vec![
+		"grin-wallet",
+		"-p",
+		"password1",
+		"-a",
+		"mining",
+		"send",
+		"--multisig",
+		"5",
+	];
+	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
+	let arg_vec = vec!["grin-wallet", "-a", "mining", "-p", "password1", "txs"];
+	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
+
+	let file_name = format!(
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b00.M1.slatepack",
+		test_dir
+	);
+
+	let arg_vec = vec![
+		"grin-wallet",
+		"-p",
+		"password2",
+		"-a",
+		"account_1",
+		"receive",
+		"-i",
+		&file_name,
+	];
+	execute_command(&app, test_dir, "wallet2", &client2, arg_vec.clone())?;
+
+	let file_name = format!(
+		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b00.M2.slatepack",
+		test_dir
+	);
+
+	let arg_vec = vec![
+		"grin-wallet",
+		"-p",
+		"password1",
+		"-a",
+		"mining",
+		"process_multisig",
+		"-i",
+		&file_name,
+	];
+	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
+
+	let file_name = format!(
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b00.M3.slatepack",
+		test_dir
+	);
+
+	let arg_vec = vec![
+		"grin-wallet",
+		"-a",
+		"account_1",
+		"-p",
+		"password2",
+		"finalize",
+		"-n",
+		"-i",
+		&file_name,
+	];
+	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
+
+	let file_name = format!(
+		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b00.M4.slatepack",
+		test_dir
+	);
+
+	let arg_vec = vec![
+		"grin-wallet",
+		"-p",
+		"password1",
+		"-a",
+		"mining",
+		"finalize",
+		"-i",
+		&file_name,
+	];
+	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
+
+	// mine some more coins to add confirmations to the multisig transaction
+	let _ =
+		test_framework::award_blocks_to_wallet(&chain, wallet1.clone(), mask1, bh as usize, false);
+
+	let arg_vec = vec!["grin-wallet", "-a", "mining", "-p", "password1", "txs"];
+	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
+
+	let arg_vec = vec!["grin-wallet", "-a", "account_1", "-p", "password2", "txs"];
+	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
+
 	// create atomic swap refund transaction
 	let arg_vec = vec![
 		"grin-wallet",
@@ -175,14 +269,18 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"mining",
 		"send_atomic",
 		"-r", // create a refund transaction
-		"5",
+		"--multisig_path",
+		"m/2622924661/3526545887/2606926411/331176156",
+		"--min_conf",
+		"0",
+		"4.9875",
 	];
 	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
 	let arg_vec = vec!["grin-wallet", "-a", "mining", "-p", "password1", "txs"];
 	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
 
 	let file_name = format!(
-		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b00.A1.slatepack",
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b01.A1.slatepack",
 		test_dir
 	);
 
@@ -202,7 +300,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	assert!(execute_command(&app, test_dir, "wallet2", &client2, arg_vec).is_err());
 
 	let file_name = format!(
-		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b00.A2.slatepack",
+		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b01.A2.slatepack",
 		test_dir
 	);
 
@@ -219,7 +317,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
 
 	let file_name = format!(
-		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b00.A3.slatepack",
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b01.A3.slatepack",
 		test_dir
 	);
 
@@ -244,14 +342,18 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"-a",
 		"account_1",
 		"send_atomic",
-		"5",
+		"--multisig_path",
+		"m/2622924661/3526545887/2606926411/331176156",
+		"--min_conf",
+		"0",
+		"4.9875",
 	];
 	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
 	let arg_vec = vec!["grin-wallet", "-a", "account_1", "-p", "password2", "txs"];
 	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
 
 	let file_name = format!(
-		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b01.A1.slatepack",
+		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b02.A1.slatepack",
 		test_dir
 	);
 
@@ -271,7 +373,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	assert!(execute_command(&app, test_dir, "wallet1", &client1, arg_vec).is_err());
 
 	let file_name = format!(
-		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b01.A2.slatepack",
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b02.A2.slatepack",
 		test_dir
 	);
 
@@ -288,7 +390,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
 
 	let file_name = format!(
-		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b01.A3.slatepack",
+		"{}/wallet2/slatepack/0436430c-2b02-624c-2032-570501212b02.A3.slatepack",
 		test_dir
 	);
 
@@ -305,7 +407,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 	execute_command(&app, test_dir, "wallet1", &client1, arg_vec)?;
 
 	let file_name = format!(
-		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b01.A4.slatepack",
+		"{}/wallet1/slatepack/0436430c-2b02-624c-2032-570501212b02.A4.slatepack",
 		test_dir
 	);
 
@@ -331,7 +433,7 @@ fn command_line_test_impl(test_dir: &str) -> Result<(), grin_wallet_controller::
 		"-i",
 		"1", // atomic ID
 		"--amount",
-		"5",
+		"4.9875",
 	];
 	execute_command(&app, test_dir, "wallet2", &client2, arg_vec)?;
 

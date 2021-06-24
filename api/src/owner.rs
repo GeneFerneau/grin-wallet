@@ -913,7 +913,7 @@ where
 	) -> Result<Slate, Error> {
 		let mut w_lock = self.wallet_inst.lock();
 		let w = w_lock.lc_provider()?.wallet_inst()?;
-		owner::process_multisig_tx(&mut **w, keychain_mask, slate, self.doctest_mode)
+		owner::process_multisig_tx(&mut **w, keychain_mask, slate)
 	}
 
 	/// Initializes an atomic swap transaction. The transaction can either be

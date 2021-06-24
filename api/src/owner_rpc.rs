@@ -2621,9 +2621,8 @@ pub fn run_doctest_owner(
 				w2.close().unwrap();
 				sl
 			} else if is_multisig {
-				let sl =
-					api_impl::owner::process_multisig_tx(&mut **w, (&mask1).as_ref(), &slate, true)
-						.unwrap();
+				let sl = api_impl::owner::process_multisig_tx(&mut **w, (&mask1).as_ref(), &slate)
+					.unwrap();
 				let mut w_lock = wallet2.lock();
 				let w2 = w_lock.lc_provider().unwrap().wallet_inst().unwrap();
 				let sl = api_impl::foreign::finalize_tx(&mut **w2, (&mask2).as_ref(), &sl, false)

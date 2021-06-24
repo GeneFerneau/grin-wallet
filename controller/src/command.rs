@@ -929,11 +929,7 @@ where
 
 	println!("Transaction finalized successfully");
 
-	if slate
-		.participant_data
-		.iter()
-		.fold(false, |t, d| t | d.tau_x.is_some())
-	{
+	if slate.is_multisig() {
 		info!(
 			"Transaction multisig identifier: {}",
 			slate.create_multisig_id().to_bip_32_string()
