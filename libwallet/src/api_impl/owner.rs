@@ -873,6 +873,7 @@ where
 			height: height,
 			lock_height: 0,
 			is_coinbase: false,
+			is_multisig: true,
 			tx_log_entry: None,
 		})?;
 		batch.save_private_context(slate.id.as_bytes(), &context)?;

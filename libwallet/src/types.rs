@@ -415,7 +415,14 @@ pub trait NodeClient: Send + Sync + Clone {
 		(
 			u64,
 			u64,
-			Vec<(pedersen::Commitment, pedersen::RangeProof, bool, u64, u64)>,
+			Vec<(
+				pedersen::Commitment,
+				pedersen::RangeProof,
+				bool,
+				bool,
+				u64,
+				u64,
+			)>,
 		),
 		Error,
 	>;
@@ -472,6 +479,8 @@ pub struct OutputData {
 	pub lock_height: u64,
 	/// Is this a coinbase output? Is it subject to coinbase locktime?
 	pub is_coinbase: bool,
+	/// Is this a multisig output?
+	pub is_multisig: bool,
 	/// Optional corresponding internal entry in tx entry log
 	pub tx_log_entry: Option<u32>,
 }

@@ -1865,6 +1865,7 @@ impl From<OutputFeaturesV4> for OutputFeatures {
 impl From<OutputFeaturesV5> for OutputFeatures {
 	fn from(of: OutputFeaturesV5) -> OutputFeatures {
 		match of.0 {
+			2 => OutputFeatures::Multisig,
 			1 => OutputFeatures::Coinbase,
 			0 | _ => OutputFeatures::Plain,
 		}
